@@ -1,0 +1,1 @@
+deployed: warden-audit v0.0.1 -> https://api.studio.thegraph.com/query/1760145/warden-audit/v0.0.1

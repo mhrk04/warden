@@ -1,0 +1,8 @@
+{
+  "sepolia": {
+    "Guard": {
+      "address": "0xfa12529ED63660dD396733C172267244c351C64a",
+      "startBlock": 11680900
+    }
+  }
+}
