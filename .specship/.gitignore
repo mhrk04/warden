@@ -1,8 +1,0 @@
-state.json
-state.json.tmp
-state.json.bak
-artifacts/traces/
-artifacts/verdicts/
-artifacts/expected-validators.txt
-!specs/
-!completed/
