@@ -172,11 +172,11 @@ Build WARDEN — a human-verified autonomous agent whose spending permissions ar
 
 <!-- Milestone 10: Bazantic Recipe (NICE-TO-HAVE — cut first; needs Bazantic account) -->
 
-- [ ] 35. MCP server exposing agent capability (RED→GREEN) [optional]
+- [x] 35. MCP server exposing agent capability (RED→GREEN) [optional — CUT: Bazantic descoped per plan cut-order, see artifacts/m10-bazantic-skipped.txt]
   - `packages/mcp/src/server.ts` tool `create_scoped_agent`. Failing test returns structured result. Implement. Green. Commit.
   - _Requirements: Scope nice-to-have (Bazantic)_
 
-- [ ] 36. Bazantic gateway + recipe (manual) [optional]
+- [x] 36. Bazantic gateway + recipe (manual) [optional — CUT: Bazantic descoped per plan cut-order]
   - Create Bazantic account + x402/MPP gateway; author a recipe combining WARDEN with one other sponsor API; record before/after.
   - _Requirements: Scope nice-to-have (Bazantic)_
 
