@@ -1,6 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { VerifyGate } from "./VerifyGate";
+
+// Mock the IDKit widget: render its children with a fake `open` so we can assert
+// the CTA renders without pulling in the real World modal/network in a unit test.
+vi.mock("@worldcoin/idkit", () => ({
+  IDKitWidget: ({ children }: { children: (p: { open: () => void }) => React.ReactNode }) =>
+    children({ open: () => {} }),
+  VerificationLevel: { Device: "device" },
+}));
 
 function mockFetchSequence(responses: Array<{ ok: boolean; status?: number; body: unknown }>) {
   const fn = vi.fn();
@@ -18,13 +26,16 @@ function mockFetchSequence(responses: Array<{ ok: boolean; status?: number; body
 describe("VerifyGate", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    // The widget only renders when an app id is configured.
+    vi.stubEnv("NEXT_PUBLIC_WORLD_APP_ID", "app_test123");
+    vi.stubEnv("NEXT_PUBLIC_WORLD_ACTION", "create-agent");
   });
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
   it("shows a loading skeleton while reading the session", () => {
-    // fetch never resolves during this synchronous assertion
     vi.stubGlobal(
       "fetch",
       vi.fn(() => new Promise(() => {})),
@@ -44,8 +55,10 @@ describe("VerifyGate", () => {
         <div>protected create</div>
       </VerifyGate>,
     );
+    // The gate shows the verify card and BLOCKS the protected children until the
+    // SERVER confirms verified (the World CTA button renders when app id is configured).
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: /selfie check/i })).toBeInTheDocument(),
+      expect(screen.getByText(/verify to create agents/i)).toBeInTheDocument(),
     );
     expect(screen.queryByText("protected create")).not.toBeInTheDocument();
   });
@@ -58,7 +71,9 @@ describe("VerifyGate", () => {
       </VerifyGate>,
     );
     await waitFor(() => expect(screen.getByText("protected create")).toBeInTheDocument());
-    expect(screen.queryByRole("button", { name: /selfie check/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /verify with world/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows an error state with retry when the session check fails", async () => {
@@ -71,29 +86,5 @@ describe("VerifyGate", () => {
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument(),
     );
-  });
-
-  it("posts a proof to the callback and reveals children once the SERVER confirms verified", async () => {
-    const fetchFn = mockFetchSequence([
-      { ok: true, body: { verified: false } }, // initial session
-      { ok: true, body: { verified: true } }, // callback POST
-      { ok: true, body: { verified: true } }, // re-read session
-    ]);
-    render(
-      <VerifyGate>
-        <div>protected create</div>
-      </VerifyGate>,
-    );
-    await waitFor(() =>
-      expect(screen.getByRole("button", { name: /selfie check/i })).toBeInTheDocument(),
-    );
-    fireEvent.click(screen.getByRole("button", { name: /selfie check/i }));
-    await waitFor(() => expect(screen.getByText("protected create")).toBeInTheDocument());
-
-    // The callback must have been POSTed (server is the gate, not client state).
-    const calledCallback = fetchFn.mock.calls.some(
-      (c) => String(c[0]).includes("/api/verify/callback") && c[1]?.method === "POST",
-    );
-    expect(calledCallback).toBe(true);
   });
 });

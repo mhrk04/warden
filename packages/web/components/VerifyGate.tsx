@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { ShieldCheck, RefreshCw, LoaderCircle } from "lucide-react";
+import { IDKitWidget, VerificationLevel, type ISuccessResult } from "@worldcoin/idkit";
 import { getSessionVerified, postVerifyCallback } from "@/lib/api";
 import { Card, CardTitle } from "./ui/Card";
 import { Button } from "./ui/Button";
@@ -15,18 +16,20 @@ export interface VerifyGateProps {
   onVerifiedChange?: (verified: boolean) => void;
 }
 
+/** Public app id + action, exposed to the client for the IDKit widget. */
+const APP_ID = (process.env.NEXT_PUBLIC_WORLD_APP_ID ?? "") as `app_${string}`;
+const ACTION = process.env.NEXT_PUBLIC_WORLD_ACTION ?? "create-agent";
+
 /**
  * Server-side verification gate (Requirement 5.1, failure mode 7). The verified
  * flag is read from GET /api/verify/session — the app NEVER self-grants verified
- * state on the client. When unverified, the protected children are not rendered
- * at all; only a "Complete Selfie Check" call-to-action is shown.
+ * state on the client. When unverified, the protected children are not rendered.
  *
- * World Selfie Check runs in the Sandbox App. In this environment we drive the
- * flow with a clearly-labelled Sandbox button that POSTs a proof to
- * /api/verify/callback; the SERVER validates the proof and sets the signed
- * session cookie, and only then does re-reading the session flip us to verified.
- * (Wiring the live @worldcoin/idkit widget is a drop-in replacement for the
- * button's onClick — the server remains the gate either way.)
+ * The real World IDKit widget produces a Selfie Check / World ID proof, which we
+ * POST to /api/verify/callback. The SERVER validates the proof against World's
+ * cloud verify endpoint and only then flips the signed session cookie to
+ * verified — the client cannot self-verify. After a successful proof we re-read
+ * the SERVER session (never trust the client result alone).
  */
 export function VerifyGate({ children, onVerifiedChange }: VerifyGateProps) {
   const [status, setStatus] = useState<Status>("loading");
@@ -49,14 +52,27 @@ export function VerifyGate({ children, onVerifiedChange }: VerifyGateProps) {
     void readSession();
   }, [readSession]);
 
-  const runVerify = useCallback(async () => {
+  // Called by IDKit after the user completes the World flow and IDKit has the
+  // proof. We forward the proof to the server, which is the actual gate.
+  const handleVerify = useCallback(async (result: ISuccessResult) => {
+    // Map IDKit's ISuccessResult to the shape our server verify expects.
+    const res = await postVerifyCallback({
+      nullifier_hash: result.nullifier_hash,
+      merkle_root: result.merkle_root,
+      proof: result.proof,
+      verification_level: result.verification_level,
+    });
+    if (!res.verified) {
+      // Throwing here tells IDKit the proof was rejected server-side.
+      throw new Error("server rejected the proof");
+    }
+  }, []);
+
+  // After IDKit's modal closes on success, re-read the SERVER session.
+  const onSuccess = useCallback(async () => {
     setSubmitting(true);
     setNotice(null);
     try {
-      // Sandbox flow: submit a proof to the server, which validates + sets the
-      // session. A live IDKit widget would provide this proof object instead.
-      await postVerifyCallback({ sandbox: true });
-      // Re-read the SERVER session — do not trust the callback response alone.
       const verified = await getSessionVerified();
       if (verified) {
         setStatus("verified");
@@ -96,6 +112,7 @@ export function VerifyGate({ children, onVerifiedChange }: VerifyGateProps) {
   }
 
   if (status === "unverified") {
+    const configured = APP_ID.startsWith("app_");
     return (
       <Card className="space-y-4">
         <div className="flex items-center gap-3">
@@ -111,17 +128,34 @@ export function VerifyGate({ children, onVerifiedChange }: VerifyGateProps) {
           </div>
         </div>
         {notice ? <Toast message={notice} tone="error" /> : null}
-        <Button onClick={runVerify} disabled={submitting}>
-          {submitting ? (
-            <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
-          ) : (
-            <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-          )}
-          Complete Selfie Check (Sandbox)
-        </Button>
+        {configured ? (
+          <IDKitWidget
+            app_id={APP_ID}
+            action={ACTION}
+            verification_level={VerificationLevel.Device}
+            handleVerify={handleVerify}
+            onSuccess={onSuccess}
+          >
+            {({ open }) => (
+              <Button onClick={open} disabled={submitting}>
+                {submitting ? (
+                  <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                )}
+                Verify with World
+              </Button>
+            )}
+          </IDKitWidget>
+        ) : (
+          <Toast
+            message="Set NEXT_PUBLIC_WORLD_APP_ID and NEXT_PUBLIC_WORLD_ACTION to enable World verification."
+            tone="error"
+          />
+        )}
         <p className="text-xs text-muted">
-          Verification is enforced server-side — this button submits a Sandbox proof that the
-          server validates before granting access.
+          Verification is enforced server-side — the World proof is validated by the server before
+          any agent can be created.
         </p>
       </Card>
     );
