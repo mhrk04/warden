@@ -1,0 +1,50 @@
+# WARDEN audit plane — entities indexed from the deployed Guard contract on Sepolia.
+# Only real emitted events are indexed: AgentConfigured, Executed, PolicyChanged, Revoked.
+# Rejections are custom-error reverts (GuardRejected(uint8)) and emit no log, so they
+# cannot appear here; the UI surfaces them from the transaction revert reason at request time.
+
+type Agent @entity(immutable: false) {
+  "namehash of the agent's ENSv2 subname (ensNode)"
+  id: Bytes!
+  "the Privy wallet address allowed to propose"
+  agentSigner: Bytes
+  "policy token (test-USDC)"
+  token: Bytes
+  "max per single payout"
+  perTxCap: BigInt
+  "max total over the agent's life"
+  cumulativeCap: BigInt
+  "running total, updated on every Executed"
+  spent: BigInt!
+  "unix seconds; proposals after this revert"
+  expiry: BigInt
+  "instant kill switch, set true on Revoked"
+  revoked: Boolean!
+  "block timestamp of the first AgentConfigured for this node"
+  createdAt: BigInt
+  "audit trail, newest queried via orderBy blockNumber"
+  events: [AuditEvent!]! @derivedFrom(field: "agent")
+}
+
+type AuditEvent @entity(immutable: true) {
+  "deterministic id: transaction hash concatenated with the log index"
+  id: Bytes!
+  "the agent this event belongs to"
+  agent: Agent!
+  "namehash of the agent's ENSv2 subname"
+  ensNode: Bytes!
+  "AgentConfigured | Executed | PolicyChanged | Revoked"
+  kind: String!
+  "recipient (Executed only)"
+  to: Bytes
+  "amount transferred (Executed only)"
+  amount: BigInt
+  "cumulative spent after this Executed"
+  newSpent: BigInt
+  perTxCap: BigInt
+  cumulativeCap: BigInt
+  expiry: BigInt
+  txHash: Bytes!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+}

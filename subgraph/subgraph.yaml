@@ -1,0 +1,32 @@
+specVersion: 1.0.0
+description: WARDEN audit plane — indexes the Guard contract's events on Ethereum Sepolia.
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: Guard
+    network: sepolia
+    source:
+      address: "0xfa12529ED63660dD396733C172267244c351C64a"
+      abi: Guard
+      startBlock: 11680900
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - Agent
+        - AuditEvent
+      abis:
+        - name: Guard
+          file: ./abis/Guard.json
+      eventHandlers:
+        - event: AgentConfigured(indexed bytes32,indexed address,address,uint256,uint256,uint64)
+          handler: handleAgentConfigured
+        - event: Executed(indexed bytes32,indexed address,uint256,uint256)
+          handler: handleExecuted
+        - event: PolicyChanged(indexed bytes32,uint256,uint256,uint64)
+          handler: handlePolicyChanged
+        - event: Revoked(indexed bytes32)
+          handler: handleRevoked
+      file: ./src/mapping.ts

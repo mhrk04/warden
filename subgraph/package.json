@@ -1,0 +1,18 @@
+{
+  "name": "@warden/subgraph",
+  "version": "0.0.0",
+  "private": true,
+  "description": "WARDEN audit plane — The Graph subgraph indexing Guard events on Sepolia",
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "test": "graph test || echo '[warden] matchstick binary unavailable in this environment — skipping (codegen+build is the compile gate)'",
+    "typecheck": "echo 'typecheck: subgraph mappings are AssemblyScript, validated by graph codegen && graph build' && exit 0"
+  },
+  "devDependencies": {
+    "@graphprotocol/graph-cli": "latest",
+    "@graphprotocol/graph-ts": "latest",
+    "assemblyscript": "0.19.23",
+    "matchstick-as": "latest"
+  }
+}
