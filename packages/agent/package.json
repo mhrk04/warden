@@ -17,6 +17,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@privy-io/server-auth": "^1.32.5",
     "viem": "^2.21.0"
   },
   "devDependencies": {

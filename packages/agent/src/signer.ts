@@ -7,9 +7,10 @@
  *
  *   (a) `createLocalSigner` — a viem WalletClient from a raw private key
  *       (env AGENT_PRIVATE_KEY), for local/demo runs.
- *   (b) `createPrivySigner` — an integration seam for the real Privy embedded
- *       wallet, wired by the web/API layer in Milestone 7. It throws until Privy
- *       is configured, so nothing silently runs unsigned.
+ *   (b) `createPrivySigner` — the REAL Privy server-wallet proposing signer
+ *       (see ./privy). Re-exported here so callers have one place to pick a
+ *       signer. It throws a clear "configure Privy" error only when the creds
+ *       are genuinely absent, so nothing silently runs unsigned.
  *
  * Secrets are read from env at runtime; nothing is committed.
  */
@@ -54,12 +55,16 @@ export function createLocalSigner(opts: LocalSignerOptions = {}): WalletClient {
 }
 
 /**
- * Integration seam for the Privy embedded wallet. The web/API layer (Milestone 7)
- * wires the real Privy-backed viem wallet client here. Until then this throws so
- * the money path is never silently unsigned.
+ * The REAL Privy server-wallet proposing signer now lives in ./privy. It returns
+ * a low-authority `ProposingWallet` (can only forward pre-built Guard.propose
+ * calls). Re-exported here so signer selection stays in one module.
  */
-export function createPrivySigner(): WalletClient {
-  throw new Error(
-    "createPrivySigner: configure Privy — the web/API layer wires the Privy embedded wallet in Milestone 7",
-  );
-}
+export {
+  createPrivySigner,
+  SEPOLIA_CAIP2,
+} from "./privy";
+export type {
+  PrivySignerOptions,
+  PrivyProposingWallet,
+  PrivyWalletClientLike,
+} from "./privy";

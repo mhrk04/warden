@@ -10,8 +10,13 @@ export type { AgentData } from "./graph";
 export { buildProposalCall, submitProposal } from "./propose";
 export type { ProposalCall, ProposingWallet } from "./propose";
 
-export { createLocalSigner, createPrivySigner } from "./signer";
-export type { LocalSignerOptions } from "./signer";
+export { createLocalSigner, createPrivySigner, SEPOLIA_CAIP2 } from "./signer";
+export type {
+  LocalSignerOptions,
+  PrivySignerOptions,
+  PrivyProposingWallet,
+  PrivyWalletClientLike,
+} from "./signer";
 
 export { explain, templateExplanation } from "./explain";
 export type { Outcome, ExplainOptions } from "./explain";
