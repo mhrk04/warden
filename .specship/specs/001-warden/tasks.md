@@ -11,29 +11,29 @@ Build WARDEN — a human-verified autonomous agent whose spending permissions ar
 
 <!-- Milestone 1: Monorepo Scaffold + Verify It Runs -->
 
-- [ ] 1. Initialize pnpm workspace + root config
+- [x] 1. Initialize pnpm workspace + root config
   - Create `pnpm-workspace.yaml` (`packages/*`, `subgraph`), root `package.json` (scripts build/test via `pnpm -r`), `tsconfig.base.json`.
   - Create `.env.example`: SEPOLIA_RPC_URL, DEPLOYER_PRIVATE_KEY, PRIVY_APP_ID, PRIVY_APP_SECRET, WORLD_APP_ID, THEGRAPH_API_KEY, SUBGRAPH_URL, LLM_API_KEY (optional), GUARD_ADDRESS, USDC_ADDRESS.
   - Run `pnpm install` (success). Commit.
   - _Requirements: Global constraints (no secrets, $0)_
 
-- [ ] 2. Foundry scaffold in packages/contracts with one passing test
+- [x] 2. Foundry scaffold in packages/contracts with one passing test
   - `forge` layout in `packages/contracts`; trivial `Hello.ping()==1` test.
   - `forge test` green. Commit.
   - _Requirements: NFR testing_
 
-- [ ] 3. Next.js app in packages/web that renders + one passing test
+- [x] 3. Next.js app in packages/web that renders + one passing test
   - Next.js App Router + TS + Tailwind + shadcn/ui init; `page.tsx` renders WARDEN heading (dark tokens); vitest smoke test.
   - `pnpm --filter web build` + `test` green; BROWSER screenshot shows it renders (not blank). Commit.
   - _Requirements: 10.2, failure mode 11_
 
-- [ ] 4. Agent + mcp package skeletons
+- [x] 4. Agent + mcp package skeletons
   - Minimal TS packages; passing smoke test in `agent`. `pnpm -r test` green. Commit.
   - _Requirements: NFR testing_
 
 <!-- Milestone 2: Guard Contract — Enforcement Core (the heart, TDD) -->
 
-- [ ] 5. Policy storage + configureAgent (RED→GREEN)
+- [-] 5. Policy storage + configureAgent (RED→GREEN)
   - `src/Guard.sol` (Policy struct, mapping by ensNode, admin access control), `IGuard.sol`, `test/mocks/MockERC20.sol`.
   - Failing test: configure stores all fields + emits AgentConfigured. Implement. Green. Commit.
   - _Requirements: 1.1, 1.2; TC-001-1_
