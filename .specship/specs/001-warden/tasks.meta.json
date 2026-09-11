@@ -1,0 +1,147 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. Initialize pnpm workspace + root config": [
+      {
+        "executionId": "88603e9d-1155-4f40-8e97-bca7237b9fef",
+        "chatSessionId": "sess_8d9a6d2d-24f9-4572-a4d5-74f113989eb4",
+        "timestamp": 1789108175352
+      },
+      {
+        "executionId": "88603e9d-1155-4f40-8e97-bca7237b9fef",
+        "chatSessionId": "sess_8d9a6d2d-24f9-4572-a4d5-74f113989eb4",
+        "timestamp": 1789108261721
+      }
+    ],
+    "2. Foundry scaffold in packages/contracts with one passing test": [
+      {
+        "executionId": "88603e9d-1155-4f40-8e97-bca7237b9fef",
+        "chatSessionId": "sess_8d9a6d2d-24f9-4572-a4d5-74f113989eb4",
+        "timestamp": 1789108268911
+      },
+      {
+        "executionId": "88603e9d-1155-4f40-8e97-bca7237b9fef",
+        "chatSessionId": "sess_8d9a6d2d-24f9-4572-a4d5-74f113989eb4",
+        "timestamp": 1789108349874
+      }
+    ],
+    "3. Next.js app in packages/web that renders + one passing test": [
+      {
+        "executionId": "88603e9d-1155-4f40-8e97-bca7237b9fef",
+        "chatSessionId": "sess_8d9a6d2d-24f9-4572-a4d5-74f113989eb4",
+        "timestamp": 1789108356960
+      },
+      {
+        "executionId": "88603e9d-1155-4f40-8e97-bca7237b9fef",
+        "chatSessionId": "sess_8d9a6d2d-24f9-4572-a4d5-74f113989eb4",
+        "timestamp": 1789108479874
+      }
+    ],
+    "4. Agent + mcp package skeletons": [
+      {
+        "executionId": "88603e9d-1155-4f40-8e97-bca7237b9fef",
+        "chatSessionId": "sess_8d9a6d2d-24f9-4572-a4d5-74f113989eb4",
+        "timestamp": 1789108487307
+      },
+      {
+        "executionId": "88603e9d-1155-4f40-8e97-bca7237b9fef",
+        "chatSessionId": "sess_8d9a6d2d-24f9-4572-a4d5-74f113989eb4",
+        "timestamp": 1789108533346
+      }
+    ],
+    "5. Policy storage + configureAgent (RED→GREEN)": [
+      {
+        "executionId": "88603e9d-1155-4f40-8e97-bca7237b9fef",
+        "chatSessionId": "sess_8d9a6d2d-24f9-4572-a4d5-74f113989eb4",
+        "timestamp": 1789108547539
+      },
+      {
+        "executionId": "88603e9d-1155-4f40-8e97-bca7237b9fef",
+        "chatSessionId": "sess_8d9a6d2d-24f9-4572-a4d5-74f113989eb4",
+        "timestamp": 1789109219673
+      }
+    ],
+    "6. Recipient allowlist management (RED→GREEN)": [
+      {
+        "executionId": "88603e9d-1155-4f40-8e97-bca7237b9fef",
+        "chatSessionId": "sess_8d9a6d2d-24f9-4572-a4d5-74f113989eb4",
+        "timestamp": 1789109220620
+      }
+    ],
+    "7. propose() happy path executes + accrues spent (RED→GREEN)": [
+      {
+        "executionId": "88603e9d-1155-4f40-8e97-bca7237b9fef",
+        "chatSessionId": "sess_8d9a6d2d-24f9-4572-a4d5-74f113989eb4",
+        "timestamp": 1789109222019
+      }
+    ],
+    "8. Per-transaction cap rejection (RED→GREEN)": [
+      {
+        "executionId": "88603e9d-1155-4f40-8e97-bca7237b9fef",
+        "chatSessionId": "sess_8d9a6d2d-24f9-4572-a4d5-74f113989eb4",
+        "timestamp": 1789109223421
+      }
+    ],
+    "9. Cumulative cap rejection (RED→GREEN)": [
+      {
+        "executionId": "88603e9d-1155-4f40-8e97-bca7237b9fef",
+        "chatSessionId": "sess_8d9a6d2d-24f9-4572-a4d5-74f113989eb4",
+        "timestamp": 1789109224175
+      }
+    ],
+    "10. Non-allowlisted recipient rejection (RED→GREEN)": [
+      {
+        "executionId": "88603e9d-1155-4f40-8e97-bca7237b9fef",
+        "chatSessionId": "sess_8d9a6d2d-24f9-4572-a4d5-74f113989eb4",
+        "timestamp": 1789109229475
+      }
+    ],
+    "11. Post-expiry rejection with boundary (RED→GREEN)": [
+      {
+        "executionId": "88603e9d-1155-4f40-8e97-bca7237b9fef",
+        "chatSessionId": "sess_8d9a6d2d-24f9-4572-a4d5-74f113989eb4",
+        "timestamp": 1789109230431
+      }
+    ],
+    "12. Non-agent-signer rejection (RED→GREEN)": [
+      {
+        "executionId": "88603e9d-1155-4f40-8e97-bca7237b9fef",
+        "chatSessionId": "sess_8d9a6d2d-24f9-4572-a4d5-74f113989eb4",
+        "timestamp": 1789109231836
+      }
+    ],
+    "13. Instant revocation finality (RED→GREEN)": [
+      {
+        "executionId": "88603e9d-1155-4f40-8e97-bca7237b9fef",
+        "chatSessionId": "sess_8d9a6d2d-24f9-4572-a4d5-74f113989eb4",
+        "timestamp": 1789109232840
+      }
+    ],
+    "14. Reentrancy + unchecked-transfer safety (RED→GREEN)": [
+      {
+        "executionId": "88603e9d-1155-4f40-8e97-bca7237b9fef",
+        "chatSessionId": "sess_8d9a6d2d-24f9-4572-a4d5-74f113989eb4",
+        "timestamp": 1789109234202
+      }
+    ],
+    "15. Invariant/property tests (P1–P4)": [
+      {
+        "executionId": "88603e9d-1155-4f40-8e97-bca7237b9fef",
+        "chatSessionId": "sess_8d9a6d2d-24f9-4572-a4d5-74f113989eb4",
+        "timestamp": 1789109235321
+      }
+    ],
+    "16. Deploy script + test-USDC (dry-run tested)": [
+      {
+        "executionId": "88603e9d-1155-4f40-8e97-bca7237b9fef",
+        "chatSessionId": "sess_8d9a6d2d-24f9-4572-a4d5-74f113989eb4",
+        "timestamp": 1789110727908
+      },
+      {
+        "executionId": "88603e9d-1155-4f40-8e97-bca7237b9fef",
+        "chatSessionId": "sess_8d9a6d2d-24f9-4572-a4d5-74f113989eb4",
+        "timestamp": 1789111149051
+      }
+    ]
+  }
+}
