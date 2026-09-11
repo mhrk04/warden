@@ -1,0 +1,84 @@
+/**
+ * Thin client-side fetch helpers for the WARDEN API routes. Responses are plain
+ * shapes (no `{data:...}` wrapping) and errors are `{ error }` — see the API
+ * contract in design.md. Each helper throws an `ApiError` carrying the HTTP
+ * status so callers can branch on 403 (verification required) vs other errors.
+ */
+import type { Agent } from "./agents";
+import type { AuditEvent } from "./audit";
+
+export class ApiError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+    this.name = "ApiError";
+  }
+}
+
+async function parse<T>(res: Response): Promise<T> {
+  const body = (await res.json().catch(() => ({}))) as T & { error?: string };
+  if (!res.ok) {
+    throw new ApiError(res.status, body?.error ?? `request failed (HTTP ${res.status})`);
+  }
+  return body as T;
+}
+
+export async function getSessionVerified(): Promise<boolean> {
+  const res = await fetch("/api/verify/session");
+  const body = await parse<{ verified: boolean }>(res);
+  return body.verified === true;
+}
+
+export async function postVerifyCallback(proof: unknown): Promise<{ verified: boolean }> {
+  const res = await fetch("/api/verify/callback", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ proof }),
+  });
+  return parse<{ verified: boolean }>(res);
+}
+
+export async function getAgents(): Promise<Agent[]> {
+  const res = await fetch("/api/agents");
+  return parse<Agent[]>(res);
+}
+
+export interface CreateAgentBody {
+  label: string;
+  perTxCap: string;
+  cumulativeCap: string;
+  expiry: string;
+  allowlist: string[];
+}
+
+export async function createAgentReq(body: CreateAgentBody): Promise<Agent> {
+  const res = await fetch("/api/agents", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  return parse<Agent>(res);
+}
+
+export interface RunResponse {
+  outcome: "executed" | "rejected";
+  reason?: number;
+  txHash?: string;
+  explanation: string;
+}
+
+export async function runAgentReq(node: string): Promise<RunResponse> {
+  const res = await fetch(`/api/agents/${node}/run`, { method: "POST" });
+  return parse<RunResponse>(res);
+}
+
+export async function revokeAgentReq(node: string): Promise<{ ok: boolean }> {
+  const res = await fetch(`/api/agents/${node}/revoke`, { method: "POST" });
+  return parse<{ ok: boolean }>(res);
+}
+
+export async function getAudit(node: string): Promise<AuditEvent[]> {
+  const res = await fetch(`/api/audit/${node}`);
+  return parse<AuditEvent[]>(res);
+}
