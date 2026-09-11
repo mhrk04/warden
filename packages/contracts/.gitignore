@@ -1,3 +1,6 @@
 out/
 cache/
 broadcast/
+foundry.lock
+# ENSv2 contracts are large (~166MB) - fetched via setup, not committed.
+lib/contracts-v2/
