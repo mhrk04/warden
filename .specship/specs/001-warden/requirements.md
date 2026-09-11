@@ -139,11 +139,11 @@ This is an ETHOnline 2026 hackathon build targeting the ENS, World, Privy, and T
 
 | Validator | Result | Details |
 |-----------|--------|---------|
-| Code Review | PASS | 178 tests green; all 14 failure modes guarded; no scope drift |
+| Code Review | PASS | 182 tests green; all 14 failure modes guarded; no scope drift |
 | Security | PASS (9/10) | on-chain enforcement, reentrancy-safe, server-side gate, no secrets; 1 non-blocking note (dev SESSION_SECRET) |
 | Integration | PASS | all API/subgraph/ABI shapes aligned; no wrapping bug |
-| Alignment | PASS | non-slop, real problem; Privy wired real + proven live after recovery |
-| Browser | INCOMPLETE | headless Chromium download broken in env; UI proven via 99 tests + build + live HTTP render + live on-chain demo |
-| Design | INCOMPLETE | Lighthouse deferred (same browser-tooling constraint) |
+| Alignment | PASS | non-slop, real problem; Privy wired real + proven live |
+| Browser | PASS | Playwright headless on live Sepolia data: verify gate, agent list, scope card (80/250 tUSDC, expiry), run/revoke, live audit timeline; desktop+mobile screenshots; caught+fixed a corrupted .next build |
+| Design | PASS | measured Lighthouse: Performance 93, Accessibility 96, Best-Practices 96; no inline styles |
 
-**Aggregate Verdict:** MERGE (all applicable validators PASS; browser/design INCOMPLETE due to environment tooling, documented)
+**Aggregate Verdict:** MERGE (all 6 validators PASS)

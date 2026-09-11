@@ -4,3 +4,5 @@ packages:
 
 onlyBuiltDependencies:
   - esbuild
+  - bufferutil
+  - utf-8-validate

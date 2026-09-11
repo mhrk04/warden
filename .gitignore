@@ -13,6 +13,5 @@ build/
 !.env.example
 /*.png
 /*.jpeg
-.specship/artifacts/
 # <<< SpecShip root ignores <<<
 .DS_Store
