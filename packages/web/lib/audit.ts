@@ -13,10 +13,9 @@
 export interface AuditEvent {
   id: string;
   ensNode: string;
-  kind: "AgentConfigured" | "Executed" | "Rejected" | "PolicyChanged" | "Revoked";
+  kind: "AgentConfigured" | "Executed" | "PolicyChanged" | "Revoked";
   to?: string;
   amount?: string;
-  reason?: number;
   newSpent?: string;
   txHash: string;
   blockTimestamp: string;
@@ -28,7 +27,6 @@ export interface RawAuditEvent {
   kind: AuditEvent["kind"];
   to?: string | null;
   amount?: string | null;
-  reason?: number | string | null;
   newSpent?: string | null;
   txHash: string;
   blockTimestamp: string;
@@ -46,7 +44,6 @@ const AUDIT_QUERY = `query Audit($node: Bytes!) {
     kind
     to
     amount
-    reason
     newSpent
     txHash
     blockTimestamp
@@ -60,7 +57,6 @@ export function mapAuditEvent(r: RawAuditEvent): AuditEvent {
     kind: r.kind,
     to: r.to ?? undefined,
     amount: r.amount ?? undefined,
-    reason: r.reason === null || r.reason === undefined ? undefined : Number(r.reason),
     newSpent: r.newSpent ?? undefined,
     txHash: r.txHash,
     blockTimestamp: r.blockTimestamp,

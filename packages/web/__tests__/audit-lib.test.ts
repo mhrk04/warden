@@ -9,7 +9,6 @@ const raw: RawAuditEvent = {
   kind: "Executed",
   to: "0x000000000000000000000000000000000000dEaD",
   amount: "80",
-  reason: null,
   newSpent: "80",
   txHash: "0x" + "ee".repeat(32),
   blockTimestamp: "1700000000",
