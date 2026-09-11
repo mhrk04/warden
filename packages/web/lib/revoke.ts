@@ -7,12 +7,14 @@
  */
 import { type Abi, type Hex } from "viem";
 import guardAbi from "../../shared/abi/Guard.json" with { type: "json" };
-import { addresses, adminWallet, publicClient } from "./chain";
+import { addresses, adminAccount, adminWallet, CHAIN, publicClient } from "./chain";
 
 export async function revokeAgent(node: string): Promise<void> {
   const { guard } = addresses();
   const wallet = adminWallet();
   const hash = await wallet.writeContract({
+    account: adminAccount(),
+    chain: CHAIN,
     address: guard as Hex,
     abi: guardAbi as unknown as Abi,
     functionName: "revoke",

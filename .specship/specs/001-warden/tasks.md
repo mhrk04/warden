@@ -33,56 +33,56 @@ Build WARDEN — a human-verified autonomous agent whose spending permissions ar
 
 <!-- Milestone 2: Guard Contract — Enforcement Core (the heart, TDD) -->
 
-- [-] 5. Policy storage + configureAgent (RED→GREEN)
+- [x] 5. Policy storage + configureAgent (RED→GREEN)
   - `src/Guard.sol` (Policy struct, mapping by ensNode, admin access control), `IGuard.sol`, `test/mocks/MockERC20.sol`.
   - Failing test: configure stores all fields + emits AgentConfigured. Implement. Green. Commit.
   - _Requirements: 1.1, 1.2; TC-001-1_
 
-- [ ] 6. Recipient allowlist management (RED→GREEN)
+- [x] 6. Recipient allowlist management (RED→GREEN)
   - `setAllowlist`/`isAllowed` comparing raw 20-byte addresses (case-insensitive).
   - Failing test incl. re-cased address treated identically. Implement. Green. Commit.
   - _Requirements: 3.3; TC-001-5, EC-001-4_
 
-- [ ] 7. propose() happy path executes + accrues spent (RED→GREEN)
+- [x] 7. propose() happy path executes + accrues spent (RED→GREEN)
   - `propose(ensNode,to,amount)`; checks-effects-interactions + SafeERC20 return check; `Executed` event.
   - Failing test: valid 80 → transfer, spent==80, event. Implement. Green. Commit.
   - _Requirements: 2.1, 2.2; TC-001-2_
 
-- [ ] 8. Per-transaction cap rejection (RED→GREEN)
+- [x] 8. Per-transaction cap rejection (RED→GREEN)
   - Failing test: amount>perTxCap → revert, no transfer, Rejected(reason=1). Implement enum+check. Green. Commit.
   - _Requirements: 3.1; TC-001-3_
 
-- [ ] 9. Cumulative cap rejection (RED→GREEN)
+- [x] 9. Cumulative cap rejection (RED→GREEN)
   - Failing test: would exceed cumulativeCap → revert reason=2; N sub-cap payouts crossing cap rejected. Implement. Green. Commit.
   - _Requirements: 3.2; TC-001-4, EC-001-6_
 
-- [ ] 10. Non-allowlisted recipient rejection (RED→GREEN)
+- [x] 10. Non-allowlisted recipient rejection (RED→GREEN)
   - Failing test: recipient not allowlisted → revert reason=3. Implement. Green. Commit.
   - _Requirements: 3.3; TC-001-5_
 
-- [ ] 11. Post-expiry rejection with boundary (RED→GREEN)
+- [x] 11. Post-expiry rejection with boundary (RED→GREEN)
   - Failing test: now>=expiry → reject reason=4 (`< expiry` rule); expiry-1 allowed. Implement. Green. Commit.
   - _Requirements: 3.4; TC-001-6, EC-001-3_
 
-- [ ] 12. Non-agent-signer rejection (RED→GREEN)
+- [x] 12. Non-agent-signer rejection (RED→GREEN)
   - Failing test: caller != agentSigner → revert reason=6, no transfer. Implement. Green. Commit.
   - _Requirements: 3.5, 7.1; TC-001-7_
 
-- [ ] 13. Instant revocation finality (RED→GREEN)
+- [x] 13. Instant revocation finality (RED→GREEN)
   - `revoke(ensNode)` + `Revoked` event. Failing test: after revoke, otherwise-valid propose rejected reason=5. Implement. Green. Commit.
   - _Requirements: 4.1; TC-001-8, EC-001-5_
 
-- [ ] 14. Reentrancy + unchecked-transfer safety (RED→GREEN)
+- [x] 14. Reentrancy + unchecked-transfer safety (RED→GREEN)
   - Mocks: ReentrantToken, FalseReturnToken. Failing tests: no double-spend; false transfer reverts, no spent accrual. Add nonReentrant + strict return check. Green. Commit.
   - _Requirements: failure mode 2; TC-001-9, TC-001-10_
 
-- [ ] 15. Invariant/property tests (P1–P4)
+- [x] 15. Invariant/property tests (P1–P4)
   - Foundry invariant handler fuzzing configure + propose sequences; assert Correctness Properties 1–4. Green. Commit.
   - _Requirements: design Properties 1-4; TC-001-P1..P4_
 
 <!-- Milestone 3: Deploy to Sepolia + Address/ABI Wiring (needs SEPOLIA_RPC_URL, DEPLOYER_PRIVATE_KEY) -->
 
-- [ ] 16. Deploy script + test-USDC (dry-run tested)
+- [x] 16. Deploy script + test-USDC (dry-run tested)
   - `script/Deploy.s.sol` deploys tUSDC (6-dec) + Guard; writes `deployments/sepolia.json` + copies ABI to `packages/shared/abi/Guard.json`. Anvil-fork dry-run test. Commit.
   - _Requirements: 2.1 (integration prep)_
 
@@ -92,11 +92,11 @@ Build WARDEN — a human-verified autonomous agent whose spending permissions ar
 
 <!-- Milestone 4: ENSv2 Identity + Scope Anchor (confirm ENSv2 Sepolia addrs first) -->
 
-- [ ] 18. ENSv2 client: namehash + subname assignment (RED→GREEN)
+- [x] 18. ENSv2 client: namehash + subname assignment (RED→GREEN)
   - `packages/agent/src/ens.ts`: `ensNodeFor(label,parent)`, `assignSubname(label,agentSigner)` via ENSv2 Permissioned Resolver + scoped role. Failing test on known namehash vectors. Implement. Green. Commit. Documented fallback: real subname + policy keyed to node hash if Enhanced Access Control API unworkable in time.
   - _Requirements: 6.1_
 
-- [ ] 19. Bind ENS node into agent creation (RED→GREEN)
+- [x] 19. Bind ENS node into agent creation (RED→GREEN)
   - Failing test: creating an agent stores the real ensNode in the Guard policy and the subname resolves. Implement. Green. Commit.
   - _Requirements: 6.1, 6.2_
 
@@ -130,15 +130,15 @@ Build WARDEN — a human-verified autonomous agent whose spending permissions ar
 
 <!-- Milestone 7: World Selfie Check Gate + API Routes (server-enforced; needs WORLD_APP_ID) -->
 
-- [ ] 26. Verify session endpoints, server-enforced (RED→GREEN)
+- [x] 26. Verify session endpoints, server-enforced (RED→GREEN)
   - `api/verify/callback` + `api/verify/session` + `lib/session.ts`. Failing test: protected route 403 without session; valid (mocked) proof → verified. Implement server-side gate + cookie. Green. Commit.
   - _Requirements: 5.1, 5.2; ACT-001-2, failure mode 7_
 
-- [ ] 27. Agents CRUD endpoints (RED→GREEN)
+- [x] 27. Agents CRUD endpoints (RED→GREEN)
   - `api/agents` GET (plain `Agent[]`) + POST (gated create → ENS + configureAgent → single Agent). `lib/guard.ts` viem client. Failing tests. Implement. Green. Commit.
   - _Requirements: 1.1, 10.1; ACT-001-1, ACT-001-2_
 
-- [ ] 28. Run + revoke + audit endpoints (RED→GREEN)
+- [x] 28. Run + revoke + audit endpoints (RED→GREEN)
   - `api/agents/[node]/run` (`{outcome,reason?,txHash?,explanation}`), `.../revoke` (gated → on-chain Revoke), `api/audit/[node]` (plain array from live subgraph). Failing tests. Implement. Green. Commit.
   - _Requirements: 4.1, 8.1, 8.2, 9.1; ACT-001-3, ACT-001-4, ACT-001-5, TC-001-int-2, TC-001-int-3_
 

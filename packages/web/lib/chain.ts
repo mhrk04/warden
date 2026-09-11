@@ -15,9 +15,19 @@
  * mocked chain functions into lib/agents + the run/revoke routes, so no live RPC
  * is touched under test.
  */
-import { createPublicClient, createWalletClient, http, type Hex } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import {
+  createPublicClient,
+  createWalletClient,
+  http,
+  type Hex,
+  type PublicClient,
+  type WalletClient,
+} from "viem";
+import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
+
+/** The chain all WARDEN server writes target. */
+export const CHAIN = sepolia;
 import deployments from "../../contracts/deployments/sepolia.json" with { type: "json" };
 
 export interface Deployments {
@@ -52,20 +62,25 @@ export function normalizePrivateKey(raw: string): Hex {
   return (k.startsWith("0x") ? k : `0x${k}`) as Hex;
 }
 
-export function publicClient() {
+export function publicClient(): PublicClient {
   return createPublicClient({ chain: sepolia, transport: http(rpcUrl()) });
 }
 
-export function adminWallet() {
+export function adminWallet(): WalletClient {
   const raw = process.env.DEPLOYER_PRIVATE_KEY;
   if (!raw) throw new Error("DEPLOYER_PRIVATE_KEY is not set");
   const account = privateKeyToAccount(normalizePrivateKey(raw));
   return createWalletClient({ account, chain: sepolia, transport: http(rpcUrl()) });
 }
 
-/** The address that acts as both admin and (for the demo) the agent signer. */
-export function adminAddress(): Hex {
+/** The admin account (deployer) used to sign server writes. */
+export function adminAccount(): PrivateKeyAccount {
   const raw = process.env.DEPLOYER_PRIVATE_KEY;
   if (!raw) throw new Error("DEPLOYER_PRIVATE_KEY is not set");
-  return privateKeyToAccount(normalizePrivateKey(raw)).address;
+  return privateKeyToAccount(normalizePrivateKey(raw));
+}
+
+/** The address that acts as both admin and (for the demo) the agent signer. */
+export function adminAddress(): Hex {
+  return adminAccount().address;
 }

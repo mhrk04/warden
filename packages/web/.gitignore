@@ -1,6 +1,7 @@
 .next/
 node_modules/
 next-env.d.ts
+*.tsbuildinfo
 
 # Runtime node->label store (display metadata only; created at agent-create time)
 data/

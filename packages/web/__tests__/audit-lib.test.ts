@@ -27,18 +27,20 @@ describe("mapAuditEvent", () => {
 
 describe("fetchAuditEventsWith (live subgraph)", () => {
   it("queries the subgraph for the node and returns a plain array", async () => {
-    const fetchImpl = vi.fn(async () => ({
-      ok: true,
-      status: 200,
-      json: async () => ({ data: { auditEvents: [raw] } }),
-    }));
+    const fetchImpl = vi.fn(
+      async (_url: string, _init?: { body?: string }) => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ data: { auditEvents: [raw] } }),
+      }),
+    );
     const events = await fetchAuditEventsWith("https://sub.example/q", NODE, fetchImpl as never);
     expect(Array.isArray(events)).toBe(true);
     expect(events).toHaveLength(1);
     expect(events[0].kind).toBe("Executed");
     // the node must be passed to the subgraph query (proves it's node-scoped)
-    const call = fetchImpl.mock.calls[0];
-    expect(String(call[1].body)).toContain(NODE);
+    const call = fetchImpl.mock.calls[0] as [string, { body?: string }];
+    expect(String(call?.[1]?.body)).toContain(NODE);
   });
 
   it("throws on a non-ok subgraph response (surfaces as an error state, not mock data)", async () => {

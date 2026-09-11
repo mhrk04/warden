@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 // Mock the session gate + the agents logic layer (chain calls are mocked out here).
-const requireVerified = vi.fn<[], Promise<Response | null>>();
+const requireVerified = vi.fn<() => Promise<Response | null>>();
 vi.mock("@/lib/session", () => ({
   requireVerified: () => requireVerified(),
 }));

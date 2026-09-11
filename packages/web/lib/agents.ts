@@ -19,7 +19,7 @@ import { type Abi, type Hex } from "viem";
 import guardAbi from "../../shared/abi/Guard.json" with { type: "json" };
 import registrarAbi from "../../shared/abi/AgentSubnameRegistrar.json" with { type: "json" };
 import { fetchAgent } from "@warden/agent";
-import { addresses, adminAddress, adminWallet, publicClient } from "./chain";
+import { addresses, adminAccount, adminAddress, adminWallet, CHAIN, publicClient } from "./chain";
 import { readLabels, saveLabel } from "./labelStore";
 
 /** ENS parent for all WARDEN agent subnames. */
@@ -172,6 +172,7 @@ export async function listAgents(): Promise<Agent[]> {
 export async function createAgent(input: CreateAgentInput): Promise<Agent> {
   const { guard, usdc, registrar } = addresses();
   const wallet = adminWallet();
+  const account = adminAccount();
   const owner = adminAddress();
   const perTxCap = BigInt(input.perTxCap);
   const cumulativeCap = BigInt(input.cumulativeCap);
@@ -186,6 +187,8 @@ export async function createAgent(input: CreateAgentInput): Promise<Agent> {
   })) as Hex;
 
   const regHash = await wallet.writeContract({
+    account,
+    chain: CHAIN,
     address: registrar as Hex,
     abi: registrarAbi as unknown as Abi,
     functionName: "register",
@@ -195,6 +198,8 @@ export async function createAgent(input: CreateAgentInput): Promise<Agent> {
 
   // (2) Configure the policy on the Guard (agentSigner = deployer for the demo).
   const cfgHash = await wallet.writeContract({
+    account,
+    chain: CHAIN,
     address: guard as Hex,
     abi: guardAbi as unknown as Abi,
     functionName: "configureAgent",
@@ -205,6 +210,8 @@ export async function createAgent(input: CreateAgentInput): Promise<Agent> {
   // (3) Set the recipient allowlist.
   for (const recipient of input.allowlist ?? []) {
     const alHash = await wallet.writeContract({
+      account,
+      chain: CHAIN,
       address: guard as Hex,
       abi: guardAbi as unknown as Abi,
       functionName: "setAllowlist",

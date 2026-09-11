@@ -15,7 +15,7 @@ vi.mock("next/headers", () => ({
 }));
 
 // ---- Mock the World verifier so no live call happens ----
-const verifyProof = vi.fn<[unknown], Promise<boolean>>();
+const verifyProof = vi.fn<(payload: unknown) => Promise<boolean>>();
 vi.mock("@/lib/world", () => ({
   verifyProof: (payload: unknown) => verifyProof(payload),
   WORLD_ACTION: "create-agent",
