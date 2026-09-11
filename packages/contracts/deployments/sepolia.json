@@ -5,5 +5,14 @@
   "network": "sepolia",
   "registrar": "0xE149BD8aC996a083d3fB073860E8324eacf1b0BB",
   "usdc": "0x758C7d91193454c365aa44C8A40542F5d59983e5",
-  "wardenRegistry": "0x031996c81e191895d3e4bf8B9CcB9CB6845d98f1"
+  "wardenRegistry": "0x031996c81e191895d3e4bf8B9CcB9CB6845d98f1",
+  "demo": {
+    "demoLabel": "demo.warden.eth",
+    "demoNode": "0x65bb79720dc6aed745a837b9458748495f158ca0ff48ca3312c7cb2646e71578",
+    "expiringLabel": "expiring.warden.eth",
+    "expiringNode": "0xf0dbc8ecc60d85037111b34a5abbc3af8a15096d5811ce33a59233981807b1f5",
+    "healthyExpiry": 1789235448,
+    "recipient": "0x70D26bDe8C7a1F2A0B0dA171bcfB4500AfA91E9D",
+    "shortExpiry": 1789149108
+  }
 }
