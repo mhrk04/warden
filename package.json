@@ -1,0 +1,15 @@
+{
+  "name": "warden",
+  "version": "0.0.0",
+  "private": true,
+  "description": "WARDEN — human-verified autonomous agent with on-chain enforced permissions",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  },
+  "packageManager": "pnpm@11.8.0"
+}

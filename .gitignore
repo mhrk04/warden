@@ -15,3 +15,4 @@ build/
 /*.jpeg
 .specship/artifacts/
 # <<< SpecShip root ignores <<<
+.DS_Store
