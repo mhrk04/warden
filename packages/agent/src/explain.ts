@@ -29,6 +29,8 @@ export interface ExplainOptions {
   apiKey?: string;
   /** Provider selector (only "gemini" is implemented; anything else falls back). */
   provider?: string;
+  /** Gemini model name; defaults to env LLM_MODEL or "gemini-flash-latest". */
+  model?: string;
   /** Injectable fetch for tests; defaults to global fetch. */
   fetchImpl?: (
     url: string,
@@ -96,7 +98,7 @@ export async function explain(o: Outcome, opts: ExplainOptions = {}): Promise<st
   const doFetch = opts.fetchImpl ?? (globalThis.fetch as unknown as ExplainOptions["fetchImpl"]);
   if (!doFetch) return templateExplanation(o);
 
-  const model = "gemini-1.5-flash";
+  const model = opts.model ?? process.env.LLM_MODEL ?? "gemini-flash-latest";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   try {
