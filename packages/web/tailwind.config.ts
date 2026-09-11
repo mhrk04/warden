@@ -2,13 +2,12 @@ import type { Config } from "tailwindcss";
 const config: Config = {
   darkMode: "class",
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
-  // The Progress fill width is computed at runtime (`w-[NN%]`), so the exact
-  // arbitrary-value utilities can't be discovered by Tailwind's source scan.
-  // Safelist every whole-percent width so the generated bar is real CSS (no
-  // inline styles — failure mode 11).
-  safelist: [
-    { pattern: /^w-\[(100|[0-9]{1,2})%\]$/ },
-  ],
+  // The Progress fill width is computed at runtime (`w-[NN%]`). Arbitrary-value
+  // utilities can't be discovered by Tailwind's source scan and a regex
+  // `safelist` pattern does not match them, so we enumerate every whole-percent
+  // width explicitly. This guarantees the bar is real generated CSS rather than
+  // an inline style (failure mode 11).
+  safelist: Array.from({ length: 101 }, (_, i) => `w-[${i}%]`),
   theme: {
     extend: {
       colors: {
