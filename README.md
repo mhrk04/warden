@@ -44,7 +44,7 @@ The Graph subgraph ◄── events ── Guard        Agent (Privy wallet, low
 
 - **ENSv2** (Sepolia beta): each agent is a real subname under our own `PermissionedRegistry` + registrar; the Guard policy is keyed to the ENS node. Identity is portable, named, revocable — not a display string.
 - **World Selfie Check**: server-enforced verification gate (HMAC-signed httpOnly session); creation/authorization is blocked until the server validates a proof.
-- **Privy**: the agent's embedded, low-authority signer — it can only call `Guard.propose`, never move funds directly.
+- **Privy**: a real Privy **server wallet** is the agent's low-authority signer — it can only forward a pre-built `Guard.propose` call, never move funds directly. Proven live: a Privy wallet signed a real on-chain payout (tx `0xba78b7e2ab8d0b10e85a8e20338792f9439f1af4b280a4943ba35a16beeb959d`, from `0xc6160A34E94F0b5210607a33C7D8DeCC9dc68000`) that the Guard enforced.
 - **The Graph**: a deployed subgraph indexes Guard events as a live, queryable audit trail (agents + AgentConfigured/Executed/PolicyChanged/Revoked).
 - **LLM (Gemini free tier, optional)**: plain-language explanations of outcomes only — never on any money path, with a deterministic template fallback so the app never depends on it.
 
@@ -76,7 +76,7 @@ pnpm install
 # 2. fetch the ENSv2 contracts dependency (gitignored, ~166MB)
 (cd packages/contracts && ./setup-deps.sh)
 # 3. configure env (see .env.example for all keys)
-cp .env.example .env   # fill SEPOLIA_RPC_URL, DEPLOYER_PRIVATE_KEY, PRIVY_*, WORLD_APP_ID, THEGRAPH_API_KEY, SUBGRAPH_URL, LLM_API_KEY
+cp .env.example .env   # fill SEPOLIA_RPC_URL, DEPLOYER_PRIVATE_KEY, PRIVY_APP_ID, PRIVY_APP_SECRET, PRIVY_WALLET_ID, WORLD_APP_ID, THEGRAPH_API_KEY, SUBGRAPH_URL, LLM_API_KEY
 # 4. contracts
 (cd packages/contracts && forge test)          # 43 tests incl. fuzzed invariants
 # 5. web dashboard
@@ -95,7 +95,7 @@ Everything is testnet-only. `.env` is gitignored; never commit real keys.
 
 - **ENS — Best Use of ENSv2:** our own PermissionedRegistry + registrar on Sepolia; agent subnames; Guard policy keyed to the real ENS node.
 - **World — Selfie Check:** server-enforced human root of trust gating agent creation/authorization (see `docs/world-feedback.md`).
-- **Privy — Best financial flow:** embedded low-authority signer executing the gated payout flow.
+- **Privy — Best financial flow:** a real Privy server wallet is the low-authority proposing signer; it executed a gated payout live on Sepolia (Guard-enforced). Set `PRIVY_WALLET_ID` to use a Privy wallet as the agent signer; otherwise a local demo key is used.
 - **The Graph — Best AI Use Case (from scratch):** live subgraph as the audit plane; the agent consumes live on-chain data to decide.
 
 ## Honest positioning

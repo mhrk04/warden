@@ -3,7 +3,8 @@
  *
  * The route reads the agent's LIVE on-chain state, runs the deterministic
  * decision rule, and — only if the rule says act — proposes the payout to the
- * Guard via the configured agent signer. The Guard is the final authority: a
+ * Guard via the configured agent signer (a real Privy server wallet when
+ * PRIVY_WALLET_ID is set, else a local demo signer). The Guard is the final authority: a
  * proposal may REVERT with GuardRejected(reason); we simulate first to capture a
  * clean reason, then send. On success -> executed + txHash; on a Guard reject ->
  * rejected + decoded reason. The `explanation` is produced by the agent's
@@ -15,7 +16,7 @@
  */
 import { type Abi, type Hex } from "viem";
 import guardAbi from "../../shared/abi/Guard.json" with { type: "json" };
-import { decide, explain, fetchAgent, toBalanceData, type Outcome } from "@warden/agent";
+import { decide, explain, fetchAgent, toBalanceData, buildProposalCall, createPrivySigner, type Outcome } from "@warden/agent";
 import { addresses, adminAddress, adminWallet, publicClient } from "./chain";
 
 export interface RunResult {
@@ -150,8 +151,9 @@ export async function runAgent(node: string): Promise<RunResult> {
 
   const sendPropose = async (recipient: Hex, amount: bigint) => {
     const client = publicClient();
-    const wallet = adminWallet();
-    // Simulate first to surface a clean GuardRejected reason before spending gas.
+    // Always simulate first to surface a clean GuardRejected(reason) BEFORE any
+    // signer spends gas — this is how a Guard rejection reaches the UI as a typed
+    // reason instead of an opaque revert.
     const { request } = await client.simulateContract({
       account: adminAddress(),
       address: guard as Hex,
@@ -159,6 +161,21 @@ export async function runAgent(node: string): Promise<RunResult> {
       functionName: "propose",
       args: [node as Hex, recipient, amount],
     });
+
+    // Prefer the REAL Privy server wallet as the proposing signer when one is
+    // configured (PRIVY_WALLET_ID); otherwise fall back to the local admin
+    // signer for the demo. Either way the signer is low-authority — it can only
+    // submit this pre-built Guard.propose call, and the Guard re-enforces every
+    // policy rule on-chain regardless of who signed.
+    if (process.env.PRIVY_WALLET_ID) {
+      const privy = createPrivySigner();
+      const call = buildProposalCall(guard as Hex, node as Hex, recipient, amount);
+      const txHash = await privy.sendTransaction({ to: call.to, data: call.data });
+      await client.waitForTransactionReceipt({ hash: txHash });
+      return { txHash };
+    }
+
+    const wallet = adminWallet();
     const txHash = await wallet.writeContract(request);
     await client.waitForTransactionReceipt({ hash: txHash });
     return { txHash };
