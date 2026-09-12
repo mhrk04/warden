@@ -110,3 +110,31 @@ Adjacent tech (ERC-4337 session keys, ERC-8004 agent identity) attacks parts of 
 The World Selfie Check gate is enforced **server-side** and is fail-closed: `/api/verify/callback` validates a World proof against World's cloud endpoint and only then sets the signed session cookie.
 
 Producing a *real* proof requires a World app whose environment matches the proof source (Simulator = staging app; World App = production app). For a smooth **local demo**, a documented dev bypass is available and is **OFF by default**: set both `WORLD_DEV_BYPASS=true` (server) and `NEXT_PUBLIC_WORLD_DEV_BYPASS=true` (client) to let the demo grant a verified session without a live proof. This is a local-only convenience — **never enable it in a deployed build**. With the flags unset, the real World proof is required.
+
+## ENSv2 identity — how it works and how to verify it
+
+WARDEN deploys its **own ENSv2 `PermissionedRegistry`** on Sepolia (per the ENSv2 "contract developers" model) and issues agent subnames like `payer.warden.eth` / `bayomakan.warden.eth` under a registrar in front of it. Each subname is a **real on-chain ENSv2 registration**, and the Guard policy is keyed to the subname's real EIP-137 **namehash node** — no hard-coded values.
+
+**Why these names don't resolve in the public ENS app:** global ENS resolution would require owning the `warden.eth` parent on the canonical ENS root and pointing it at our registry (`setSubregistry`). We don't own that parent, so the names live in **our** ENSv2 registry, not the global ENS namespace. This is the documented tradeoff of building on the ENSv2 beta without controlling the parent — the identity is real and on-chain; it's just scoped to our registry.
+
+**Verify it on-chain (Sepolia):**
+
+- WARDEN ENSv2 registry (`WardenRegistry`, extends PermissionedRegistry): [`0x031996c81e191895d3e4bf8B9CcB9CB6845d98f1`](https://sepolia.etherscan.io/address/0x031996c81e191895d3e4bf8B9CcB9CB6845d98f1)
+- Agent subname registrar (`AgentSubnameRegistrar`): [`0xE149BD8aC996a083d3fB073860E8324eacf1b0BB`](https://sepolia.etherscan.io/address/0xE149BD8aC996a083d3fB073860E8324eacf1b0BB)
+- Guard (enforcement): [`0xfa12529ED63660dD396733C172267244c351C64a`](https://sepolia.etherscan.io/address/0xfa12529ED63660dD396733C172267244c351C64a)
+
+Prove a subname is really registered + the node the Guard is keyed to:
+
+```bash
+export RPC=<your Sepolia RPC>
+REG=0xE149BD8aC996a083d3fB073860E8324eacf1b0BB
+# false = the label is taken (i.e. registered on-chain)
+cast call $REG "available(string)(bool)" "bayomakan" --rpc-url $RPC
+# the real EIP-137 namehash node the Guard policy binds to
+cast call $REG "nodeFor(string)(bytes32)" "bayomakan" --rpc-url $RPC
+# the Guard policy keyed to that node (perTxCap, cumulativeCap, spent, expiry, revoked, ensNode, agentSigner)
+GUARD=0xfa12529ED63660dD396733C172267244c351C64a
+cast call $GUARD "getPolicy(bytes32)((address,uint256,uint256,uint256,uint64,bool,bytes32,address))" <node-from-above> --rpc-url $RPC
+```
+
+The `AgentConfigured` / `Executed` / `Rejected`-reason events for each agent are visible in the app's audit timeline (indexed by our subgraph) and on Etherscan against the Guard address.
