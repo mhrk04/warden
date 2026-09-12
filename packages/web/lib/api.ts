@@ -6,6 +6,7 @@
  */
 import type { Agent } from "./agents";
 import type { AuditEvent } from "./audit";
+import type { EnsRecords } from "./ensRecords";
 
 export class ApiError extends Error {
   status: number;
@@ -81,4 +82,9 @@ export async function revokeAgentReq(node: string): Promise<{ ok: boolean }> {
 export async function getAudit(node: string): Promise<AuditEvent[]> {
   const res = await fetch(`/api/audit/${node}`);
   return parse<AuditEvent[]>(res);
+}
+
+export async function getEnsRecords(node: string): Promise<EnsRecords> {
+  const res = await fetch(`/api/agents/${node}/records`);
+  return parse<EnsRecords>(res);
 }
