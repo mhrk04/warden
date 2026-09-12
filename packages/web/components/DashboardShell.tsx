@@ -39,7 +39,17 @@ export function DashboardShell({ sidebar, verified, children }: DashboardShellPr
               <Menu className="h-5 w-5" aria-hidden="true" />
             )}
           </Button>
-          <span className="text-xl font-bold tracking-tight text-fg-strong">WARDEN</span>
+          <span className="flex items-center gap-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.svg"
+              alt="WARDEN logo"
+              width={28}
+              height={28}
+              className="h-7 w-7 rounded-md"
+            />
+            <span className="text-xl font-bold tracking-tight text-fg-strong">WARDEN</span>
+          </span>
         </div>
         <div className="flex items-center gap-2">
           {verified ? (
