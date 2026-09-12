@@ -1,8 +1,8 @@
 # WARDEN
 
-**Human-verified autonomous agents whose spending permissions are enforced on-chain.**
+**Most AI agent wallets enforce spending limits in the agent's own code — so a hijacked agent just ignores them.**
 
-An AI agent can hold a wallet and pay autonomously — but nothing normally stops a compromised or rogue agent from draining funds or paying an attacker. In most stacks a permission "scope" is advisory: the agent's own code decides whether to obey it. WARDEN makes the scope **enforced on-chain**. Funds sit behind a Guard contract; the agent can only *propose* a payment; the contract rejects anything outside a scope a **verified human** set — even if the agent's code/LLM is fully hijacked.
+WARDEN moves the limits **on-chain**, where the agent can't touch them. Funds sit behind a **Guard contract**; the agent can only *propose* a payment, and the contract rejects anything outside a scope a **verified human** set — per-tx cap, cumulative cap, recipient allowlist, expiry, instant revocation. Even a fully hijacked agent LLM/key moves **zero funds** out of scope. **Proven live on Sepolia** — one real payout executed, four attack cases rejected on-chain ([tx + reasons below](#proven-live-on-sepolia)).
 
 Built for ETHOnline 2026. Everything runs on **Ethereum Sepolia** at **$0** (testnet + free SDK tiers).
 
