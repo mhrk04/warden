@@ -19,6 +19,8 @@ export interface VerifyGateProps {
 /** Public app id + action, exposed to the client for the IDKit widget. */
 const APP_ID = (process.env.NEXT_PUBLIC_WORLD_APP_ID ?? "") as `app_${string}`;
 const ACTION = process.env.NEXT_PUBLIC_WORLD_ACTION ?? "create-agent";
+/** Local-demo-only: shows a bypass button when the server bypass is enabled. OFF by default. */
+const DEV_BYPASS = process.env.NEXT_PUBLIC_WORLD_DEV_BYPASS === "true";
 
 /**
  * Server-side verification gate (Requirement 5.1, failure mode 7). The verified
@@ -82,6 +84,29 @@ export function VerifyGate({ children, onVerifiedChange }: VerifyGateProps) {
       }
     } catch {
       setNotice("Verification failed. The server rejected the Selfie Check proof.");
+    } finally {
+      setSubmitting(false);
+    }
+  }, [onVerifiedChange]);
+
+  // Local-demo-only bypass: posts to the callback (which itself checks the
+  // server-side WORLD_DEV_BYPASS flag) and re-reads the server session. This is
+  // NOT a client self-grant — the server still decides. Off unless both the
+  // server (WORLD_DEV_BYPASS) and client (NEXT_PUBLIC_WORLD_DEV_BYPASS) flags are set.
+  const runDevBypass = useCallback(async () => {
+    setSubmitting(true);
+    setNotice(null);
+    try {
+      await postVerifyCallback({ devBypass: true });
+      const verified = await getSessionVerified();
+      if (verified) {
+        setStatus("verified");
+        onVerifiedChange?.(true);
+      } else {
+        setNotice("Dev bypass did not verify — is WORLD_DEV_BYPASS set on the server?");
+      }
+    } catch {
+      setNotice("Dev bypass failed.");
     } finally {
       setSubmitting(false);
     }
@@ -153,6 +178,11 @@ export function VerifyGate({ children, onVerifiedChange }: VerifyGateProps) {
             tone="error"
           />
         )}
+        {DEV_BYPASS ? (
+          <Button variant="secondary" onClick={runDevBypass} disabled={submitting}>
+            Dev bypass (local demo)
+          </Button>
+        ) : null}
         <p className="text-xs text-muted">
           Verification is enforced server-side — the World proof is validated by the server before
           any agent can be created.

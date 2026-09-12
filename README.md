@@ -103,3 +103,10 @@ Everything is testnet-only. `.env` is gitignored; never commit real keys.
 Adjacent tech (ERC-4337 session keys, ERC-8004 agent identity) attacks parts of this space — ERC-8004 gives agent identity but explicitly leaves *payment enforcement* out of scope. WARDEN's contribution is the composition: binding on-chain spend **enforcement** to a **verified-human** root of trust + a **named ENS** agent identity + **instant revocation** + a **public audit plane**. We claim the composition, not the invention of any single primitive.
 
 > Experimental hackathon software. All contracts are unaudited and testnet-only; not for production or real value.
+
+
+## Note on the World verification demo
+
+The World Selfie Check gate is enforced **server-side** and is fail-closed: `/api/verify/callback` validates a World proof against World's cloud endpoint and only then sets the signed session cookie.
+
+Producing a *real* proof requires a World app whose environment matches the proof source (Simulator = staging app; World App = production app). For a smooth **local demo**, a documented dev bypass is available and is **OFF by default**: set both `WORLD_DEV_BYPASS=true` (server) and `NEXT_PUBLIC_WORLD_DEV_BYPASS=true` (client) to let the demo grant a verified session without a live proof. This is a local-only convenience — **never enable it in a deployed build**. With the flags unset, the real World proof is required.
