@@ -21,15 +21,22 @@ function mockClient(hash = "0xdeadbeef") {
     address: "0x2222222222222222222222222222222222222222",
     chainType: "ethereum",
   }));
+  const getWallet = vi.fn(async ({ id }: { id: string }) => ({
+    id,
+    address: "0x3333333333333333333333333333333333333333",
+    chainType: "ethereum",
+  }));
   return {
     client: {
       walletApi: {
         createWallet,
+        getWallet,
         ethereum: { sendTransaction },
       },
     },
     sendTransaction,
     createWallet,
+    getWallet,
   };
 }
 
@@ -100,5 +107,31 @@ describe("createPrivySigner", () => {
 
   it("throws a clear 'configure Privy' error when credentials are absent (no silent fallback)", () => {
     expect(() => createPrivySigner()).toThrow(/configure Privy/i);
+  });
+
+  it("resolveWalletAddress fetches the configured walletId's address (so callers can simulate as the real signer)", async () => {
+    const { client, getWallet } = mockClient();
+    const signer = createPrivySigner({ client, walletId: "wallet-xyz" });
+
+    // Not known synchronously for a pre-configured walletId...
+    expect(signer.getWalletAddress()).toBeNull();
+    // ...but resolvable from Privy's getWallet, and then cached.
+    const addr = await signer.resolveWalletAddress();
+    expect(addr).toBe("0x3333333333333333333333333333333333333333");
+    expect(signer.getWalletAddress()).toBe(addr);
+    expect(getWallet).toHaveBeenCalledWith({ id: "wallet-xyz" });
+    // Cached: a second resolve does not re-fetch.
+    await signer.resolveWalletAddress();
+    expect(getWallet).toHaveBeenCalledTimes(1);
+  });
+
+  it("resolveWalletAddress lazily creates a wallet when no walletId is configured", async () => {
+    const { client, createWallet, getWallet } = mockClient();
+    const signer = createPrivySigner({ client });
+
+    const addr = await signer.resolveWalletAddress();
+    expect(addr).toBe("0x2222222222222222222222222222222222222222");
+    expect(createWallet).toHaveBeenCalledTimes(1);
+    expect(getWallet).not.toHaveBeenCalled();
   });
 });

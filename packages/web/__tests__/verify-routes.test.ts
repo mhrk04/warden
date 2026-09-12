@@ -28,6 +28,10 @@ import { POST as callbackPOST } from "../app/api/verify/callback/route";
 beforeEach(() => {
   jar.clear();
   verifyProof.mockReset();
+  // These tests exercise the REAL proof path, so the local-demo bypass must be
+  // off regardless of what the ambient env (.env.local) sets — otherwise the
+  // callback short-circuits to a verified session before verifyProof runs.
+  delete process.env.WORLD_DEV_BYPASS;
 });
 
 function jsonReq(body: unknown): Request {

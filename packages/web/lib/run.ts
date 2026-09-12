@@ -17,7 +17,7 @@
 import { type Abi, type Hex } from "viem";
 import guardAbi from "../../shared/abi/Guard.json" with { type: "json" };
 import { decide, explain, fetchAgent, toBalanceData, buildProposalCall, createPrivySigner, type Outcome } from "@warden/agent";
-import { addresses, adminAddress, adminWallet, publicClient } from "./chain";
+import { addresses, adminAccount, adminAddress, adminWallet, publicClient } from "./chain";
 
 export interface RunResult {
   outcome: "executed" | "rejected";
@@ -102,6 +102,12 @@ export async function runAgentWith(deps: RunDeps): Promise<RunResult> {
     };
   } catch (err) {
     const reason = decodeGuardReason(err);
+    if (reason === undefined) {
+      // A non-Guard error (send/tx failure) — surface it to the server log so a
+      // "reason 0" outcome is diagnosable instead of an opaque dead-end.
+      // eslint-disable-next-line no-console
+      console.error("[run] propose failed (non-Guard error):", err instanceof Error ? err.message : err);
+    }
     return {
       outcome: "rejected",
       reason,
@@ -149,46 +155,114 @@ export async function runAgent(node: string): Promise<RunResult> {
     };
   };
 
+  // Resolve the live agent once and reuse it — both the decision rule and the
+  // per-agent signer selection need it, and one read keeps them consistent.
+  const liveAgent = await fetchLiveAgent();
+
   const sendPropose = async (recipient: Hex, amount: bigint) => {
     const client = publicClient();
-    // Always simulate first to surface a clean GuardRejected(reason) BEFORE any
-    // signer spends gas — this is how a Guard rejection reaches the UI as a typed
-    // reason instead of an opaque revert.
+
+    // Select the signer PER-AGENT so any agent runs with its correct signer in a
+    // single server config. The Guard enforces `msg.sender == agentSigner`, so
+    // we must both SIMULATE and SEND as that exact account. When a Privy server
+    // wallet is configured AND it matches this agent's on-chain agentSigner, the
+    // Privy wallet proposes; otherwise the deployer (admin) signer does. Both are
+    // low-authority — they can only forward this pre-built Guard.propose call.
+    const agentSigner = liveAgent?.agentSigner?.toLowerCase();
+    const privy = process.env.PRIVY_WALLET_ID ? createPrivySigner() : null;
+    const privyAddress = privy ? await privy.resolveWalletAddress() : null;
+    const usePrivy = Boolean(privyAddress) && privyAddress!.toLowerCase() === agentSigner;
+
+    // Simulate as the exact broadcasting account so the reason reflects the send.
+    const signerAddress = (usePrivy ? privyAddress! : adminAddress()) as Hex;
     const { request } = await client.simulateContract({
-      account: adminAddress(),
+      account: signerAddress,
       address: guard as Hex,
       abi: guardAbi as unknown as Abi,
       functionName: "propose",
       args: [node as Hex, recipient, amount],
     });
 
-    // Prefer the REAL Privy server wallet as the proposing signer when one is
-    // configured (PRIVY_WALLET_ID); otherwise fall back to the local admin
-    // signer for the demo. Either way the signer is low-authority — it can only
-    // submit this pre-built Guard.propose call, and the Guard re-enforces every
-    // policy rule on-chain regardless of who signed.
-    if (process.env.PRIVY_WALLET_ID) {
-      const privy = createPrivySigner();
+    if (usePrivy) {
       const call = buildProposalCall(guard as Hex, node as Hex, recipient, amount);
-      const txHash = await privy.sendTransaction({ to: call.to, data: call.data });
+      const txHash = await privy!.sendTransaction({ to: call.to, data: call.data });
       await client.waitForTransactionReceipt({ hash: txHash });
       return { txHash };
     }
 
+    // Deployer path: sign LOCALLY and broadcast via eth_sendRawTransaction. The
+    // wallet client must carry the local `account` OBJECT (not just an address)
+    // so viem signs client-side — a public RPC like Alchemy rejects
+    // eth_sendTransaction because it doesn't custody the key. We therefore call
+    // writeContract with the explicit local account rather than reusing the
+    // simulated `request` (whose account is a bare address).
     const wallet = adminWallet();
-    const txHash = await wallet.writeContract(request);
+    const txHash = await wallet.writeContract({ ...request, account: adminAccount() });
     await client.waitForTransactionReceipt({ hash: txHash });
     return { txHash };
   };
 
+  // Resolve a recipient that is ACTUALLY on this agent's allowlist. The Guard
+  // exposes `isAllowed(node, recipient)` (but no way to enumerate the allowlist,
+  // and the subgraph does not index entries), so we probe the known candidate
+  // recipients and pick the first allowed one. This prevents a false
+  // GuardRejected(reason=3) when the agent's allowlist doesn't happen to contain
+  // the deployer. Falls back to the deployer (the demo's default seeded
+  // recipient) when none of the candidates are allowlisted.
+  const recipient = await resolveAllowlistedRecipient(node);
+
   return runAgentWith({
-    fetchLiveAgent,
+    // Reuse the already-resolved agent so we don't read live state twice.
+    fetchLiveAgent: async () => liveAgent,
     targetSpent: 0n,
-    // Demo: pay the configured deployer-controlled recipient. In a full build the
-    // recipient comes from the allowlist; here we use the admin address so the
-    // payout targets a known allowlisted address seeded at create time.
-    recipient: adminAddress(),
+    recipient,
     sendPropose,
     explainOutcome: (o) => explain(o),
   });
+}
+
+/** Candidate recipients to probe against the Guard allowlist, in preference order. */
+function recipientCandidates(): Hex[] {
+  const list = [
+    adminAddress(),
+    // The demo burn recipient seeded on several demo agents' allowlists.
+    "0x000000000000000000000000000000000000dEaD",
+    // An extra recipient explicitly configured via env, if present.
+    process.env.DEMO_RECIPIENT,
+  ].filter(Boolean) as string[];
+  // De-dupe (case-insensitive) while preserving order.
+  const seen = new Set<string>();
+  const out: Hex[] = [];
+  for (const r of list) {
+    const key = r.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(r as Hex);
+  }
+  return out;
+}
+
+/**
+ * Pick the first candidate recipient that `Guard.isAllowed(node, recipient)`
+ * confirms. Returns the deployer as a last-resort fallback so a payout is still
+ * attempted (and the Guard surfaces a truthful reason) when nothing is known.
+ */
+export async function resolveAllowlistedRecipient(node: string): Promise<Hex> {
+  const { guard } = addresses();
+  const client = publicClient();
+  const candidates = recipientCandidates();
+  for (const recipient of candidates) {
+    try {
+      const allowed = (await client.readContract({
+        address: guard as Hex,
+        abi: guardAbi as unknown as Abi,
+        functionName: "isAllowed",
+        args: [node as Hex, recipient],
+      })) as boolean;
+      if (allowed) return recipient;
+    } catch {
+      // Ignore a probe failure and try the next candidate.
+    }
+  }
+  return adminAddress();
 }

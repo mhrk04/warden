@@ -35,6 +35,8 @@ export interface PrivyWalletClientLike {
     createWallet(input: {
       chainType: "ethereum";
     }): Promise<{ id: string; address: string }>;
+    /** Fetch an existing wallet by id — used to resolve its address for simulation. */
+    getWallet(input: { id: string }): Promise<{ id: string; address: string }>;
     ethereum: {
       sendTransaction(input: {
         walletId: string;
@@ -66,7 +68,15 @@ export interface PrivySignerOptions {
  * configured or lazily created), else null — handy for logging/allowlisting.
  */
 export interface PrivyProposingWallet extends ProposingWallet {
+  /** The wallet address if already known (sync); null until resolved. */
   getWalletAddress(): string | null;
+  /**
+   * Resolve the wallet address, fetching it from Privy when a walletId was
+   * configured but its address is not yet cached. Needed so callers can simulate
+   * `Guard.propose` as the exact account that will broadcast (the Guard enforces
+   * `msg.sender == agentSigner`). Returns null only when no wallet can be resolved.
+   */
+  resolveWalletAddress(): Promise<string | null>;
 }
 
 /**
@@ -98,6 +108,18 @@ export function createPrivySigner(
 
   return {
     getWalletAddress: () => walletAddress,
+    async resolveWalletAddress(): Promise<string | null> {
+      if (walletAddress) return walletAddress;
+      // A configured walletId has no address cached yet — fetch it from Privy.
+      if (walletId) {
+        const w = await client.walletApi.getWallet({ id: walletId });
+        walletAddress = w.address;
+        return walletAddress;
+      }
+      // No walletId configured — create one lazily (also caches the address).
+      await ensureWalletId();
+      return walletAddress;
+    },
     async sendTransaction(tx: { to: Hex; data: Hex }): Promise<Hex> {
       const id = await ensureWalletId();
       // Pure pass-through: forward EXACTLY the caller's {to,data}. This signer
