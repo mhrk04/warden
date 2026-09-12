@@ -1,0 +1,91 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B0F19"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4F46E5"/>
+      <stop offset="0.55" stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#A855F7"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0EA5E9"/>
+      <stop offset="1" stop-color="#4F46E5"/>
+    </linearGradient>
+    <linearGradient id="wm" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#F9FAFB"/>
+      <stop offset="1" stop-color="#C7D2FE"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1280" height="720" fill="url(#bg)"/>
+
+  <!-- subtle glow accents -->
+  <circle cx="1120" cy="120" r="220" fill="#4F46E5" opacity="0.10"/>
+  <circle cx="180" cy="640" r="200" fill="#A855F7" opacity="0.08"/>
+
+  <!-- shield mark on the right -->
+  <g transform="translate(880,150)">
+    <path d="M160 20
+             L292 72
+             V186
+             C292 272 231 325 160 350
+             C89 325 28 272 28 186
+             V72 Z"
+          fill="url(#shield)" stroke="url(#edge)" stroke-width="6"/>
+    <g fill="#F9FAFB">
+      <path d="M160 118
+               a30 30 0 0 1 30 30
+               v18
+               h-20
+               v-18
+               a10 10 0 0 0 -20 0
+               v18
+               h-20
+               v-18
+               a30 30 0 0 1 30 -30 Z"/>
+      <rect x="122" y="166" width="76" height="62" rx="12"/>
+    </g>
+    <g fill="#0B0F19">
+      <circle cx="160" cy="192" r="9"/>
+      <rect x="156" y="196" width="8" height="22" rx="3"/>
+    </g>
+  </g>
+
+  <!-- wordmark + copy on the left -->
+  <text x="96" y="230" font-family="Inter, system-ui, sans-serif" font-size="112" font-weight="700" letter-spacing="6" fill="url(#wm)">WARDEN</text>
+
+  <text x="100" y="300" font-family="Inter, system-ui, sans-serif" font-size="34" font-weight="500" fill="#9CA3AF">On-chain enforced spending limits for AI agents.</text>
+  <text x="100" y="346" font-family="Inter, system-ui, sans-serif" font-size="34" font-weight="500" fill="#9CA3AF">The agent can only propose — the contract enforces.</text>
+
+  <!-- four enforcement pills -->
+  <g font-family="Inter, system-ui, sans-serif" font-size="26" font-weight="600">
+    <g>
+      <rect x="100" y="430" width="230" height="64" rx="14" fill="#1F2937" stroke="#374151"/>
+      <text x="132" y="470" fill="#E5E7EB">Per-tx cap</text>
+    </g>
+    <g>
+      <rect x="350" y="430" width="290" height="64" rx="14" fill="#1F2937" stroke="#374151"/>
+      <text x="382" y="470" fill="#E5E7EB">Cumulative cap</text>
+    </g>
+    <g>
+      <rect x="100" y="512" width="270" height="64" rx="14" fill="#1F2937" stroke="#374151"/>
+      <text x="132" y="552" fill="#E5E7EB">Allowlist</text>
+    </g>
+    <g>
+      <rect x="390" y="512" width="250" height="64" rx="14" fill="#1F2937" stroke="#374151"/>
+      <text x="422" y="552" fill="#E5E7EB">Expiry</text>
+    </g>
+  </g>
+
+  <!-- revoke chip (danger accent) -->
+  <g font-family="Inter, system-ui, sans-serif" font-size="26" font-weight="600">
+    <rect x="100" y="612" width="360" height="64" rx="14" fill="#1F2937" stroke="#EF4444"/>
+    <circle cx="140" cy="644" r="9" fill="#EF4444"/>
+    <text x="162" y="653" fill="#F9FAFB">Instant human revocation</text>
+  </g>
+
+  <!-- chain tag -->
+  <text x="700" y="660" font-family="'JetBrains Mono', monospace" font-size="24" fill="#6B7280">Ethereum Sepolia · ENS · World · Privy · The Graph</text>
+</svg>

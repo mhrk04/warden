@@ -15,3 +15,6 @@ build/
 /*.jpeg
 # <<< SpecShip root ignores <<<
 .DS_Store
+
+# Agent session logs (local only)
+sess_*/
