@@ -9,6 +9,7 @@ import { AgentCard } from "@/components/AgentCard";
 import { RunPanel } from "@/components/RunPanel";
 import { RevokeButton } from "@/components/RevokeButton";
 import { AuditTimeline } from "@/components/AuditTimeline";
+import { EnsRecordsPanel } from "@/components/EnsRecordsPanel";
 import { VerifyGate } from "@/components/VerifyGate";
 import { CreateAgentDialog } from "@/components/CreateAgentDialog";
 import { Button } from "@/components/ui/Button";
@@ -117,6 +118,11 @@ export default function Dashboard() {
               node={selectedAgent.ensNode}
               disabled={selectedAgent.revoked}
               onRan={() => setAuditKey((k) => k + 1)}
+            />
+            <EnsRecordsPanel
+              node={selectedAgent.ensNode}
+              ensName={selectedAgent.ensName}
+              refreshKey={auditKey}
             />
             <AuditTimeline
               node={selectedAgent.ensNode}
