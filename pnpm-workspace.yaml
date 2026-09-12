@@ -2,7 +2,32 @@ packages:
   - "packages/*"
   - "subgraph"
 
+allowBuilds:
+  bufferutil: false
+  esbuild: false
+  utf-8-validate: false
+
 onlyBuiltDependencies:
   - esbuild
   - bufferutil
   - utf-8-validate
+
+# Force patched versions of vulnerable transitive dependencies (mostly pulled in
+# by the build-time-only @graphprotocol/graph-cli). Ranges target only the
+# vulnerable versions so patched releases already in the tree are left alone.
+overrides:
+  # NOTE: `decompress` has no patched release (latest is 4.2.1); it is a
+  # build-time-only transitive of @graphprotocol/graph-cli, so it is left as-is.
+  "cross-spawn@<7.0.5": ">=7.0.5"
+  "glob@>=11.0.0 <11.1.0": ">=11.1.0"
+  "axios@<0.30.0": ">=0.30.0"
+  "semver@<7.5.2": ">=7.5.2"
+  "undici@<7.28.0": ">=7.28.0"
+  "immutable@<5.1.8": ">=5.1.8"
+  "js-yaml@<4.1.2": ">=4.1.2"
+  "postcss@<8.5.23": ">=8.5.23"
+  "ejs@<3.1.10": ">=3.1.10"
+  "esbuild@<0.24.3": ">=0.24.3"
+  "yaml@<2.8.3": ">=2.8.3"
+  "uuid@<11.1.1": ">=11.1.1"
+  "stream-json@<3.4.1": ">=3.4.1"
