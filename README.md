@@ -42,7 +42,7 @@ The Graph subgraph ◄── events ── Guard        Agent (Privy wallet, low
   (queryable audit plane)                      reads live data → decides → PROPOSES
 ```
 
-- **ENSv2** (Sepolia beta): each agent is a real subname under our own `PermissionedRegistry` + registrar; the Guard policy is keyed to the ENS node. Identity is portable, named, revocable — not a display string.
+- **ENSv2** (Sepolia beta): each agent is a real subname under our own `PermissionedRegistry` + registrar; the Guard policy is keyed to the ENS node. Identity is portable, named, revocable — not a display string. Each subname also **owns its data** via a real ENSv2 **`PermissionedResolver`**: an `addr` record (the agent signer) plus `warden:guard` / `warden:node` / `warden:status` / `description` text records. Record writes are governed by **Enhanced Access Control** — the name owner can delegate the right to edit exactly **one** text key (e.g. `warden:status`) to another account without handing over the name (`authorizeTextRoles`). Proven in `packages/contracts/test/ENSResolver.t.sol`.
 - **World Selfie Check**: server-enforced verification gate (HMAC-signed httpOnly session); creation/authorization is blocked until the server validates a proof.
 - **Privy**: a real Privy **server wallet** is the agent's low-authority signer — it can only forward a pre-built `Guard.propose` call, never move funds directly. Proven live: a Privy wallet signed a real on-chain payout (tx `0xba78b7e2ab8d0b10e85a8e20338792f9439f1af4b280a4943ba35a16beeb959d`, from `0xc6160A34E94F0b5210607a33C7D8DeCC9dc68000`) that the Guard enforced.
 - **The Graph**: a deployed subgraph indexes Guard events as a live, queryable audit trail (agents + AgentConfigured/Executed/PolicyChanged/Revoked).
@@ -114,6 +114,12 @@ Producing a *real* proof requires a World app whose environment matches the proo
 ## ENSv2 identity — how it works and how to verify it
 
 WARDEN deploys its **own ENSv2 `PermissionedRegistry`** on Sepolia (per the ENSv2 "contract developers" model) and issues agent subnames like `payer.warden.eth` / `bayomakan.warden.eth` under a registrar in front of it. Each subname is a **real on-chain ENSv2 registration**, and the Guard policy is keyed to the subname's real EIP-137 **namehash node** — no hard-coded values.
+
+We use three ENSv2 primitives, not one:
+
+1. **Permissioned Registry** — our `WardenRegistry` extends ENSv2's `PermissionedRegistry` (ERC-1155 + Enhanced Access Control); the registrar grants each agent owner a *scoped* role set (`ROLE_SET_RESOLVER | ROLE_SET_SUBREGISTRY`), not registry ownership.
+2. **Permissioned Resolver** — each subname is given a real ENSv2 `PermissionedResolver` (deployed impl + `VerifiableFactory` proxy) holding the agent's `addr` + `warden:*` / `description` records, so the name *is* the agent's on-chain profile.
+3. **Enhanced Access Control (fine-grained)** — the resolver's `authorizeTextRoles(name, key, account, grant)` lets the owner delegate write access to *one specific text record* (scoped by `resource(node, keccak(key))`). Our tests prove a delegate can edit only `warden:status` and is reverted on any other record, and that the delegation is revocable.
 
 **Why these names don't resolve in the public ENS app:** global ENS resolution would require owning the `warden.eth` parent on the canonical ENS root and pointing it at our registry (`setSubregistry`). We don't own that parent, so the names live in **our** ENSv2 registry, not the global ENS namespace. This is the documented tradeoff of building on the ENSv2 beta without controlling the parent — the identity is real and on-chain; it's just scoped to our registry.
 
