@@ -66,6 +66,7 @@ subgraph/      The Graph subgraph (audit plane)
 - TestUSDC (tUSDC, 6-dec faucet): `0x758C7d91193454c365aa44C8A40542F5d59983e5`
 - WardenRegistry (ENSv2): `0x031996c81e191895d3e4bf8B9CcB9CB6845d98f1`
 - AgentSubnameRegistrar: `0xE149BD8aC996a083d3fB073860E8324eacf1b0BB`
+- PermissionedResolver (ENSv2, for `resolved.warden.eth`): `0xdFC684928163F2d808bb4f1AE5aB22A624F8862f`
 - Subgraph: `https://api.studio.thegraph.com/query/1760145/warden-audit/v0.0.1`
 
 ## Run it
@@ -144,3 +145,27 @@ cast call $GUARD "getPolicy(bytes32)((address,uint256,uint256,uint256,uint64,boo
 ```
 
 The `AgentConfigured` / `Executed` / `Rejected`-reason events for each agent are visible in the app's audit timeline (indexed by our subgraph) and on Etherscan against the Guard address.
+
+### Permissioned Resolver + fine-grained EAC — live on Sepolia
+
+`resolved.warden.eth` is a subname with a **real ENSv2 `PermissionedResolver`** ([`0xdFC684928163F2d808bb4f1AE5aB22A624F8862f`](https://sepolia.etherscan.io/address/0xdFC684928163F2d808bb4f1AE5aB22A624F8862f)) that holds its own records, and a delegate that can edit **only** the `warden:status` text key. Verify it on-chain:
+
+```bash
+export RPC=<your Sepolia RPC>
+RES=0xdFC684928163F2d808bb4f1AE5aB22A624F8862f
+NODE=0xb3127fe890ce2fc47237dc5d24cdc03f4b3f10282fd5fa9fe40fcd119d0e5842
+DELEGATE=0xb7564bb2eF7fCA7A227BC8f163b4cEf339D14004
+
+# The subname owns its data: addr + text records resolve off the resolver.
+cast call $RES "addr(bytes32)(address)" $NODE --rpc-url $RPC                    # agent signer
+cast call $RES "text(bytes32,string)(string)" $NODE "warden:status" --rpc-url $RPC   # "active"
+cast call $RES "text(bytes32,string)(string)" $NODE "warden:guard"  --rpc-url $RPC   # Guard address
+
+# Fine-grained EAC: the delegate holds ROLE_SET_TEXT (0x10) on ONLY the "warden:status" resource.
+STATUS_RES=$(cast keccak "$NODE$(cast keccak 'warden:status' | cut -c3-)")
+DESC_RES=$(cast keccak "$NODE$(cast keccak 'description' | cut -c3-)")
+cast call $RES "hasRoles(uint256,uint256,address)(bool)" $STATUS_RES 16 $DELEGATE --rpc-url $RPC  # true
+cast call $RES "hasRoles(uint256,uint256,address)(bool)" $DESC_RES   16 $DELEGATE --rpc-url $RPC  # false
+```
+
+Re-run the seed yourself with `forge script script/SeedResolver.s.sol:SeedResolver --rpc-url $SEPOLIA_RPC_URL --broadcast` (deploys a resolver, registers the subname, writes records, and grants the scoped delegate). Proven in tests by `packages/contracts/test/ENSResolver.t.sol` (5 tests).

@@ -14,5 +14,12 @@
     "healthyExpiry": 1789235448,
     "recipient": "0x70D26bDe8C7a1F2A0B0dA171bcfB4500AfA91E9D",
     "shortExpiry": 1789149108
+  },
+  "resolver": {
+    "delegate": "0xb7564bb2eF7fCA7A227BC8f163b4cEf339D14004",
+    "delegatedKey": "warden:status",
+    "label": "resolved.warden.eth",
+    "node": "0xb3127fe890ce2fc47237dc5d24cdc03f4b3f10282fd5fa9fe40fcd119d0e5842",
+    "resolver": "0xdFC684928163F2d808bb4f1AE5aB22A624F8862f"
   }
 }
