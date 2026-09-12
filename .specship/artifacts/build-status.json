@@ -1,3 +1,4 @@
 { "typecheck": "pass", "tests": "pass", "build": "pass",
-  "tests_command": "forge test (43) + agent vitest (32) + web vitest (99) + subgraph matchstick (4) = 178",
-  "updated_at": "2026-09-11T17:57:47Z" }
+  "tests_command": "forge test (48) + agent vitest (38) + web vitest (105) + subgraph matchstick (4) = 195",
+  "note": "post World ID 4.0 migration re-validation",
+  "updated_at": "2026-09-12T15:40:00Z" }

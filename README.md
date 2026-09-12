@@ -15,7 +15,7 @@ The agent does **not** custody funds. A **Guard contract** holds/gates them and 
 - **Expiry** — when its authority ends
 - **Instant revocation** — a one-transaction human kill switch
 
-Every proposal that violates the policy reverts with a typed reason and moves no funds. A **verified human** (World Selfie Check) is required to create an agent or raise its scope — a bot cannot self-authorize.
+Every proposal that violates the policy reverts with a typed reason and moves no funds. A **verified human** (World ID 4.0 Proof of Human) is required to create an agent or raise its scope — a bot cannot self-authorize.
 
 ### Proven live on Sepolia
 
@@ -32,7 +32,7 @@ Against the deployed Guard, all five cases (see `.specship/specs/001-warden/arti
 ## Architecture
 
 ```
-Verified human (World Selfie Check)
+Verified human (World ID 4.0 Proof of Human)
   │ creates agent + sets policy (caps, allowlist, expiry)
   ▼
 ENSv2 subname  agent.warden.eth ── scope ──►  Guard contract (holds/gates funds)
@@ -43,7 +43,7 @@ The Graph subgraph ◄── events ── Guard        Agent (Privy wallet, low
 ```
 
 - **ENSv2** (Sepolia beta): each agent is a real subname under our own `PermissionedRegistry` + registrar; the Guard policy is keyed to the ENS node. Identity is portable, named, revocable — not a display string. Each subname also **owns its data** via a real ENSv2 **`PermissionedResolver`**: an `addr` record (the agent signer) plus `warden:guard` / `warden:node` / `warden:status` / `description` text records. Record writes are governed by **Enhanced Access Control** — the name owner can delegate the right to edit exactly **one** text key (e.g. `warden:status`) to another account without handing over the name (`authorizeTextRoles`). Proven in `packages/contracts/test/ENSResolver.t.sol`.
-- **World Selfie Check**: server-enforced verification gate (HMAC-signed httpOnly session); creation/authorization is blocked until the server validates a proof.
+- **World ID 4.0 (Proof of Human)**: server-enforced verification gate (HMAC-signed httpOnly session). The backend signs an `rp_context` with a server-only RP signing key, the client collects a World ID 4.0 proof via IDKit, and the server validates it against World's v4 endpoint (`POST /api/v4/verify/{rp_id}`) before flipping the session to verified. Action-scoped nullifiers give replay protection. Creation/authorization is blocked until the server validates a proof — the client cannot self-verify.
 - **Privy**: a real Privy **server wallet** is the agent's low-authority signer — it can only forward a pre-built `Guard.propose` call, never move funds directly. Proven live: a Privy wallet signed a real on-chain payout (tx `0xba78b7e2ab8d0b10e85a8e20338792f9439f1af4b280a4943ba35a16beeb959d`, from `0xc6160A34E94F0b5210607a33C7D8DeCC9dc68000`) that the Guard enforced.
 - **The Graph**: a deployed subgraph indexes Guard events as a live, queryable audit trail (agents + AgentConfigured/Executed/PolicyChanged/Revoked).
 - **LLM (Gemini free tier, optional)**: plain-language explanations of outcomes only — never on any money path, with a deterministic template fallback so the app never depends on it.
@@ -77,9 +77,9 @@ pnpm install
 # 2. fetch the ENSv2 contracts dependency (gitignored, ~166MB)
 (cd packages/contracts && ./setup-deps.sh)
 # 3. configure env (see .env.example for all keys)
-cp .env.example .env   # fill SEPOLIA_RPC_URL, DEPLOYER_PRIVATE_KEY, PRIVY_APP_ID, PRIVY_APP_SECRET, PRIVY_WALLET_ID, WORLD_APP_ID, THEGRAPH_API_KEY, SUBGRAPH_URL, LLM_API_KEY
+cp .env.example .env   # fill SEPOLIA_RPC_URL, DEPLOYER_PRIVATE_KEY, PRIVY_APP_ID, PRIVY_APP_SECRET, PRIVY_WALLET_ID, WORLD_APP_ID, WORLD_RP_ID, RP_SIGNING_KEY, NEXT_PUBLIC_WLD_ENVIRONMENT, THEGRAPH_API_KEY, SUBGRAPH_URL, LLM_API_KEY
 # 4. contracts
-(cd packages/contracts && forge test)          # 43 tests incl. fuzzed invariants
+(cd packages/contracts && forge test)          # 48 tests incl. fuzzed invariants
 # 5. web dashboard
 (cd packages/web && pnpm dev)                   # http://localhost:3000
 ```
@@ -88,14 +88,14 @@ Everything is testnet-only. `.env` is gitignored; never commit real keys.
 
 ## Tests
 
-- **Contracts (Foundry):** 43 tests — every reject path (per-tx, cumulative, allowlist, expiry, signer), revocation finality, reentrancy + unchecked-transfer safety, and 4 fuzzed invariants (spend bound, monotonicity, revocation finality, signer authority).
-- **Agent:** 32 tests — pure decision rule, live-data reader, propose (no direct-transfer path — statically enforced), LLM explain with fallback.
-- **Web:** 99 tests — API routes (server-side verify gate, agents CRUD/run/revoke/audit) + React components (all five states each).
+- **Contracts (Foundry):** 48 tests — every reject path (per-tx, cumulative, allowlist, expiry, signer), revocation finality, reentrancy + unchecked-transfer safety, and 4 fuzzed invariants (spend bound, monotonicity, revocation finality, signer authority).
+- **Agent:** 38 tests — pure decision rule, live-data reader, propose (no direct-transfer path — statically enforced), LLM explain with fallback.
+- **Web:** 105 tests — API routes (server-side World ID 4.0 verify gate incl. RP-signature + nullifier replay, agents CRUD/run/revoke/audit) + React components (all five states each).
 
 ## Prize-track mapping
 
 - **ENS — Best Use of ENSv2:** our own PermissionedRegistry + registrar on Sepolia; agent subnames; Guard policy keyed to the real ENS node.
-- **World — Selfie Check:** server-enforced human root of trust gating agent creation/authorization (see `docs/world-feedback.md`).
+- **World — World ID 4.0 (Proof of Human):** server-enforced human root of trust gating agent creation/authorization — backend RP-signed `rp_context`, IDKit 4.x on the client, v4 proof verification server-side, action-scoped nullifier replay protection (see `docs/world-feedback.md`).
 - **Privy — Best financial flow:** a real Privy server wallet is the low-authority proposing signer; it executed a gated payout live on Sepolia (Guard-enforced). Set `PRIVY_WALLET_ID` to use a Privy wallet as the agent signer; otherwise a local demo key is used.
 - **The Graph — Best AI Use Case (from scratch):** live subgraph as the audit plane; the agent consumes live on-chain data to decide.
 
@@ -106,11 +106,19 @@ Adjacent tech (ERC-4337 session keys, ERC-8004 agent identity) attacks parts of 
 > Experimental hackathon software. All contracts are unaudited and testnet-only; not for production or real value.
 
 
-## Note on the World verification demo
+## Note on the World ID verification demo
 
-The World Selfie Check gate is enforced **server-side** and is fail-closed: `/api/verify/callback` validates a World proof against World's cloud endpoint and only then sets the signed session cookie.
+WARDEN uses **World ID 4.0** (IDKit 4.x). The gate is enforced **server-side** and is fail-closed. The flow:
 
-Producing a *real* proof requires a World app whose environment matches the proof source (Simulator = staging app; World App = production app). For a smooth **local demo**, a documented dev bypass is available and is **OFF by default**: set both `WORLD_DEV_BYPASS=true` (server) and `NEXT_PUBLIC_WORLD_DEV_BYPASS=true` (client) to let the demo grant a verified session without a live proof. This is a local-only convenience — **never enable it in a deployed build**. With the flags unset, the real World proof is required.
+1. `POST /api/verify/rp-signature` signs an `rp_context` with a **server-only** RP signing key (`RP_SIGNING_KEY` — never exposed to the client, never a `NEXT_PUBLIC_*` var).
+2. The client opens the IDKit `IDKitRequestWidget` with that `rp_context` and the `proofOfHuman()` preset to collect a proof.
+3. `POST /api/verify/callback` forwards the IDKit result byte-for-byte to World's v4 endpoint (`POST https://developer.world.org/api/v4/verify/{rp_id}`) and only sets the signed session cookie when World confirms it. The returned nullifier is recorded to reject replays.
+
+**Environment matching (critical):** the IDKit `environment` prop, the action's registered environment, and the verification source must all match. WARDEN defaults to **`staging`** (`NEXT_PUBLIC_WLD_ENVIRONMENT=staging`), which verifies against the **World ID Simulator** (`https://simulator.worldcoin.org`) — no phone needed. To verify with a real World App on a phone, register a `production` action and set `NEXT_PUBLIC_WLD_ENVIRONMENT=production`.
+
+A documented **local dev bypass** is available and **OFF by default**: set both `WORLD_DEV_BYPASS=true` (server) and `NEXT_PUBLIC_WORLD_DEV_BYPASS=true` (client) to grant a verified session without a live proof. Local-only convenience — **never enable it in a deployed build**. With the flags unset, the real World ID proof is required.
+
+App identifiers: `WORLD_APP_ID` (`app_...`), `WORLD_RP_ID` (`rp_...`), action `create-agent`.
 
 ## ENSv2 identity — how it works and how to verify it
 
