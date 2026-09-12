@@ -18,3 +18,5 @@ build/
 
 # Agent session logs (local only)
 sess_*/
+.vercel
+.env*
