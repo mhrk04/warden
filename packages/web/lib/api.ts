@@ -31,11 +31,31 @@ export async function getSessionVerified(): Promise<boolean> {
   return body.verified === true;
 }
 
-export async function postVerifyCallback(proof: unknown): Promise<{ verified: boolean }> {
+/** World ID 4.0 rp_context returned by our backend RP-signing route. */
+export interface RpContext {
+  rp_id: string;
+  nonce: string;
+  created_at: number;
+  expires_at: number;
+  signature: string;
+}
+
+/** Fetch a freshly-signed rp_context from the backend (World ID 4.0 requires it). */
+export async function getRpSignature(): Promise<RpContext> {
+  const res = await fetch("/api/verify/rp-signature", { method: "POST" });
+  const body = await parse<{ rp_context: RpContext }>(res);
+  return body.rp_context;
+}
+
+/**
+ * Forward the raw IDKit v4 result to the server, which verifies it against
+ * World's v4 endpoint. The result is sent unchanged (no remapping).
+ */
+export async function postVerifyCallback(result: unknown): Promise<{ verified: boolean }> {
   const res = await fetch("/api/verify/callback", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ proof }),
+    body: JSON.stringify({ result }),
   });
   return parse<{ verified: boolean }>(res);
 }

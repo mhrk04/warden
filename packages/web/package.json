@@ -11,12 +11,12 @@
   },
   "dependencies": {
     "@warden/agent": "workspace:*",
+    "@worldcoin/idkit": "^4.2.3",
     "lucide-react": "^1.44.0",
     "next": "^15.1.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "viem": "^2.21.0",
-    "@worldcoin/idkit": "^2.4.0"
+    "viem": "^2.21.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",

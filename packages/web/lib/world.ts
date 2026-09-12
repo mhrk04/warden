@@ -1,33 +1,31 @@
 /**
- * World ID / Selfie Check proof verification (Requirement 5.1/5.2).
+ * World ID 4.0 proof verification (Requirement 5.1/5.2).
  *
- * `verifyProof` implements the World "verifyCloudProof" pattern: it POSTs the
- * proof to World's cloud verify endpoint for the configured app and action, and
- * returns whether the proof is valid. The route handler imports this function
- * so tests can mock it — because a live Selfie Check proof requires the Sandbox
- * app + a real device, the SERVER GATE + proof-verification wiring is what we
- * unit-test (with a mocked verifier); the real proof flow is exercised in the
- * browser milestone.
+ * WARDEN uses World ID 4.0 (IDKit 4.x). The flow:
+ *   1. Backend signs an `rp_context` with the RP signing key (see
+ *      app/api/verify/rp-signature/route.ts).
+ *   2. Client opens the IDKit widget with that rp_context and gets a proof.
+ *   3. Client POSTs the IDKit result to our callback, which calls `verifyProof`
+ *      here — we forward the result BYTE-FOR-BYTE to World's v4 verify endpoint
+ *      `POST https://developer.world.org/api/v4/verify/{rp_id}`.
  *
- * Action-name convention: the `action` submitted to World must match the action
- * configured in the World Developer Portal for the app. WARDEN uses the action
- * id `WORLD_ACTION` ("create-agent") — the human proves uniqueness for the
- * "create an agent" action before the server grants a verified session.
+ * The verification is enforced ENTIRELY server-side: only a result that World
+ * confirms flips the signed session cookie to verified. A client cannot
+ * self-verify. `verifyProof` fails closed (returns false) on any missing field,
+ * non-2xx response, or transport error.
+ *
+ * IMPORTANT: do NOT mutate, re-encode, or trim the IDKit result before
+ * forwarding — World verifies the exact payload the World App produced.
  */
 
 /** The World action id this app verifies against (must match the Portal config). */
 export const WORLD_ACTION = "create-agent" as const;
 
-/** World cloud verify API v2 base. app_id is appended per-request. */
-const WORLD_VERIFY_BASE = "https://developer.worldcoin.org/api/v2/verify";
+/** The World ID 4.0 relying-party id (from configure_world_id). Env-overridable. */
+export const WORLD_RP_ID = process.env.WORLD_RP_ID ?? "rp_e912cded57ffc59a";
 
-/** The proof payload shape World's IDKit produces on the client. */
-export interface WorldProof {
-  nullifier_hash: string;
-  merkle_root: string;
-  proof: string;
-  verification_level?: string;
-}
+/** World ID 4.0 verify API base. rp_id is appended per-request. */
+const WORLD_VERIFY_BASE = "https://developer.world.org/api/v4/verify";
 
 /** Injectable fetch (defaults to global fetch) so tests never hit the wire. */
 type FetchLike = (
@@ -36,45 +34,52 @@ type FetchLike = (
 ) => Promise<{ ok: boolean; status: number; json: () => Promise<unknown> }>;
 
 export interface VerifyProofOptions {
-  appId?: string;
-  action?: string;
+  rpId?: string;
   fetchImpl?: FetchLike;
 }
 
+/** The successful v4 verify response carries the action-scoped nullifier. */
+export interface VerifyResult {
+  success: boolean;
+  nullifier?: string;
+}
+
 /**
- * Verify a World proof against the cloud verify endpoint. Returns true only when
- * World confirms the proof. Any missing field, non-2xx response, or transport
- * error yields false (fail-closed — an unverifiable proof must not grant access).
+ * Verify a World ID 4.0 result against the v4 verify endpoint. Returns
+ * `{ success, nullifier }`. `success` is true only when World confirms the
+ * proof; any missing payload, non-2xx response, or transport error yields
+ * `{ success: false }` (fail-closed — an unverifiable proof must not grant
+ * access). The `nullifier` (when present) is used for replay protection.
+ *
+ * `result` is the raw IDKit result object; it is forwarded unchanged.
  */
 export async function verifyProof(
-  proof: WorldProof,
+  result: unknown,
   opts: VerifyProofOptions = {},
-): Promise<boolean> {
-  const appId = opts.appId ?? process.env.WORLD_APP_ID;
-  const action = opts.action ?? WORLD_ACTION;
-  if (!appId) return false;
-  if (!proof || !proof.nullifier_hash || !proof.merkle_root || !proof.proof) return false;
+): Promise<VerifyResult> {
+  const rpId = opts.rpId ?? WORLD_RP_ID;
+  if (!rpId) return { success: false };
+  if (!result || typeof result !== "object") return { success: false };
 
   const doFetch = opts.fetchImpl ?? (globalThis.fetch as unknown as FetchLike);
-  if (!doFetch) return false;
+  if (!doFetch) return { success: false };
 
   try {
-    const res = await doFetch(`${WORLD_VERIFY_BASE}/${appId}`, {
+    const res = await doFetch(`${WORLD_VERIFY_BASE}/${rpId}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        nullifier_hash: proof.nullifier_hash,
-        merkle_root: proof.merkle_root,
-        proof: proof.proof,
-        verification_level: proof.verification_level ?? "device",
-        action,
-      }),
+      // Forward the IDKit result exactly as received — no remapping.
+      body: JSON.stringify(result),
     });
-    // World returns 200 with { success: true } on a valid proof.
-    if (!res.ok) return false;
-    const body = (await res.json()) as { success?: boolean };
-    return body?.success === true;
+    if (!res.ok) return { success: false };
+    const body = (await res.json()) as {
+      success?: boolean;
+      nullifier?: string;
+      nullifier_hash?: string;
+    };
+    if (body?.success !== true) return { success: false };
+    return { success: true, nullifier: body.nullifier ?? body.nullifier_hash };
   } catch {
-    return false;
+    return { success: false };
   }
 }

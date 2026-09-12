@@ -15,19 +15,23 @@ vi.mock("next/headers", () => ({
 }));
 
 // ---- Mock the World verifier so no live call happens ----
-const verifyProof = vi.fn<(payload: unknown) => Promise<boolean>>();
+// World ID 4.0: verifyProof returns { success, nullifier } (not a bare boolean).
+const verifyProof = vi.fn<(payload: unknown) => Promise<{ success: boolean; nullifier?: string }>>();
 vi.mock("@/lib/world", () => ({
   verifyProof: (payload: unknown) => verifyProof(payload),
   WORLD_ACTION: "create-agent",
+  WORLD_RP_ID: "rp_test",
 }));
 
 // Import AFTER mocks are registered.
 import { GET as sessionGET } from "../app/api/verify/session/route";
 import { POST as callbackPOST } from "../app/api/verify/callback/route";
+import { __resetNullifiers } from "../lib/nullifiers";
 
 beforeEach(() => {
   jar.clear();
   verifyProof.mockReset();
+  __resetNullifiers();
   // These tests exercise the REAL proof path, so the local-demo bypass must be
   // off regardless of what the ambient env (.env.local) sets — otherwise the
   // callback short-circuits to a verified session before verifyProof runs.
@@ -50,8 +54,8 @@ describe("GET /api/verify/session", () => {
   });
 
   it("returns { verified: true } after a valid proof set the session", async () => {
-    verifyProof.mockResolvedValue(true);
-    await callbackPOST(jsonReq({ proof: { nullifier_hash: "0xabc" } }));
+    verifyProof.mockResolvedValue({ success: true, nullifier: "0xabc" });
+    await callbackPOST(jsonReq({ result: { responses: [{ nullifier: "0xabc" }] } }));
     const res = await sessionGET(new Request("http://test/api/verify/session"));
     expect(await res.json()).toEqual({ verified: true });
   });
@@ -59,8 +63,8 @@ describe("GET /api/verify/session", () => {
 
 describe("POST /api/verify/callback", () => {
   it("sets the session verified for a valid (mocked) proof", async () => {
-    verifyProof.mockResolvedValue(true);
-    const res = await callbackPOST(jsonReq({ proof: { nullifier_hash: "0xabc" } }));
+    verifyProof.mockResolvedValue({ success: true, nullifier: "0xabc" });
+    const res = await callbackPOST(jsonReq({ result: { responses: [{ nullifier: "0xabc" }] } }));
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ verified: true });
     // and the session now reads verified
@@ -69,8 +73,8 @@ describe("POST /api/verify/callback", () => {
   });
 
   it("returns 400 { error } for an invalid (mocked) proof and leaves session unverified", async () => {
-    verifyProof.mockResolvedValue(false);
-    const res = await callbackPOST(jsonReq({ proof: { nullifier_hash: "0xbad" } }));
+    verifyProof.mockResolvedValue({ success: false });
+    const res = await callbackPOST(jsonReq({ result: { responses: [{ nullifier: "0xbad" }] } }));
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toBeTruthy();
@@ -78,10 +82,21 @@ describe("POST /api/verify/callback", () => {
     expect(await s.json()).toEqual({ verified: false });
   });
 
-  it("returns 400 { error } when proof is missing", async () => {
+  it("returns 400 { error } when the proof result is missing", async () => {
     const res = await callbackPOST(jsonReq({}));
     expect(res.status).toBe(400);
     expect((await res.json()).error).toBeTruthy();
     expect(verifyProof).not.toHaveBeenCalled();
+  });
+
+  it("rejects a replayed nullifier with 409 (same human can't verify twice)", async () => {
+    verifyProof.mockResolvedValue({ success: true, nullifier: "0xdup" });
+    // First verification succeeds and records the nullifier.
+    const first = await callbackPOST(jsonReq({ result: { responses: [{ nullifier: "0xdup" }] } }));
+    expect(first.status).toBe(200);
+    // Second verification with the same nullifier is a replay → 409.
+    const second = await callbackPOST(jsonReq({ result: { responses: [{ nullifier: "0xdup" }] } }));
+    expect(second.status).toBe(409);
+    expect((await second.json()).error).toBeTruthy();
   });
 });

@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { VerifyGate } from "./VerifyGate";
 
-// Mock the IDKit widget: render its children with a fake `open` so we can assert
-// the CTA renders without pulling in the real World modal/network in a unit test.
+// Mock the IDKit v4 widget: it's a controlled component (no render-prop), so we
+// render nothing — the gate's own "Verify with World" button drives the flow.
+// proofOfHuman() returns an opaque preset object; a stub is fine for unit tests.
 vi.mock("@worldcoin/idkit", () => ({
-  IDKitWidget: ({ children }: { children: (p: { open: () => void }) => React.ReactNode }) =>
-    children({ open: () => {} }),
-  VerificationLevel: { Device: "device" },
+  IDKitRequestWidget: () => null,
+  proofOfHuman: () => ({ preset: "proofOfHuman" }),
 }));
 
 function mockFetchSequence(responses: Array<{ ok: boolean; status?: number; body: unknown }>) {
@@ -29,6 +29,7 @@ describe("VerifyGate", () => {
     // The widget only renders when an app id is configured.
     vi.stubEnv("NEXT_PUBLIC_WORLD_APP_ID", "app_test123");
     vi.stubEnv("NEXT_PUBLIC_WORLD_ACTION", "create-agent");
+    vi.stubEnv("NEXT_PUBLIC_WLD_ENVIRONMENT", "staging");
   });
   afterEach(() => {
     vi.unstubAllGlobals();
