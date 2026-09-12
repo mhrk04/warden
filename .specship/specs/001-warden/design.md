@@ -33,7 +33,7 @@ WARDEN makes the permission scope **enforced on-chain**, bound to a verified hum
 **Data flow:**
 
 ```
-Verified human (World Selfie Check)
+Verified human (World ID 4.0 Proof of Human)
    |  creates agent + sets policy (limit, allowlist, expiry)
    v
 ENSv2 subname  agent.warden.eth  -- scope role -->  Guard contract (holds/gates funds)
@@ -56,7 +56,7 @@ warden/  (pnpm monorepo, at repo root)
 - packages/
   - contracts/   # Foundry: Guard/policy contract + ENSv2 subname registrar + Enhanced Access Control roles
   - agent/       # rule engine + The Graph queries + Privy propose flow + LLM NL layer (fallback-safe)
-  - web/         # Next.js: World Selfie Check gate -> create agent + set policy -> dashboard + NL chat
+  - web/         # Next.js: World ID 4.0 Proof of Human gate -> create agent + set policy -> dashboard + NL chat
   - mcp/         # Bazantic-compatible MCP server exposing the "spawn scoped agent" recipe (nice-to-have)
 - subgraph/      # The Graph subgraph indexing Guard events
 - docs/
@@ -68,7 +68,7 @@ warden/  (pnpm monorepo, at repo root)
 | Track | How WARDEN qualifies |
 |---|---|
 | ENS — Best Use of ENSv2 ($4,500) | ENSv2 subname on Sepolia is central: identity + anchor for the enforced permission scope (Permissioned Resolver + Enhanced Access Control). Not cosmetic. |
-| World — Selfie Check ($3,500) | Selfie Check via Sandbox App is the human root of trust gating agent creation/authorization. Feedback doc included. |
+| World — Proof of Human ($3,500) | World ID 4.0 Proof of Human (IDKit 4.x, v4 verify) is the human root of trust gating agent creation/authorization. Feedback doc included. |
 | Privy — Best financial flow ($2,500) | Privy embedded wallet executes the payout flow, tied to a policy control. Real functional flow. |
 | The Graph — Best AI Use Case, From Scratch ($5,000) | Subgraph indexes Guard events as the live audit plane; agent consumes live data to drive decisions. |
 | Bazantic — Recipe / Agentify ($1,000+) | (Cut-first) MCP server + gateway + recipe combining WARDEN with another sponsor API. |
@@ -77,7 +77,7 @@ warden/  (pnpm monorepo, at repo root)
 
 | Component | Role | Why it is load-bearing |
 |---|---|---|
-| World Selfie Check (Sandbox App) | Human root of trust | A verified unique human is required to create an agent and set/raise permissions. A bot cannot self-authorize. |
+| World ID 4.0 (Proof of Human) | Human root of trust | A verified unique human is required to create an agent and set/raise permissions. A bot cannot self-authorize. |
 | ENSv2 subname `agent.warden.eth` (Sepolia) | Agent identity + scope anchor | Permissioned Resolver + Enhanced Access Control delegate a scoped role to the agent, not ownership. Portable, named, revocable. |
 | Guard contract (Foundry/Solidity) | Enforcement core | Gates funds. Enforces per-tx + cumulative spend limit, recipient allowlist, expiry, instant human revocation. Heart of the mission. |
 | Privy embedded wallet | Agent operational signer | Seed-phrase-free key the agent uses to propose payments. Low authority: only the Guard releases funds within policy. |
@@ -119,8 +119,9 @@ Responses are plain shapes (no `{data:...}` wrapping); errors are `{ error: stri
 
 | Endpoint | Method | Request | Response | Notes |
 |---|---|---|---|---|
-| `/api/verify/session` | GET | — | `{ verified: boolean }` | reads server session set after World Selfie Check |
-| `/api/verify/callback` | POST | `{ proof }` | `{ verified: true }` or `{ error }` | verifies World proof, sets session |
+| `/api/verify/session` | GET | — | `{ verified: boolean }` | reads server session set after World ID verification |
+| `/api/verify/rp-signature` | POST | — | `{ rp_context }` | backend-signs a World ID 4.0 rp_context (server-only RP key) |
+| `/api/verify/callback` | POST | `{ result }` | `{ verified: true }` or `{ error }` | verifies World ID 4.0 result via `/api/v4/verify/{rp_id}`, sets session, records nullifier |
 | `/api/agents` | GET | — | `Agent[]` | plain array |
 | `/api/agents` | POST | `{ label, perTxCap, cumulativeCap, expiry, allowlist[] }` | `Agent` | 403 `{error}` if session not verified |
 | `/api/agents/:node/revoke` | POST | — | `{ ok: true }` | 403 if not verified; triggers on-chain Revoke |
@@ -144,7 +145,7 @@ Subgraph (The Graph) is the source for `spent`, `AuditEvent[]`, and current rema
 - **Allowlist (on-chain):** `mapping(bytes32 ensNode => mapping(address => bool))`.
 - **Agent (off-chain view model):** `{ ensName, ensNode, agentSigner, perTxCap, cumulativeCap, spent, expiry, revoked }`.
 - **AuditEvent (subgraph entity):** `{ id, ensNode, kind: "AgentConfigured"|"Executed"|"Rejected"|"PolicyChanged"|"Revoked", to?, amount?, reason?, newSpent?, txHash, blockTimestamp }`.
-- **VerificationSession (server session):** `{ verified: boolean, worldNullifier?, createdAt }` — set only after a valid World Selfie Check proof.
+- **VerificationSession (server session):** `{ verified: boolean, nullifier?, createdAt }` — set only after a valid World ID 4.0 proof (verified via `/api/v4/verify/{rp_id}`).
 
 ## Correctness Properties
 
@@ -176,7 +177,7 @@ no LLM output is on any code path that signs or triggers a transfer.
 ## Error Handling
 
 - **On-chain:** invalid proposals revert with a typed reason and emit `Rejected(reason)`; no partial state change (checks-effects-interactions). ERC-20 transfer return value checked (SafeERC20 style); reentrancy guard on execute.
-- **Verification:** unverified requests to protected routes return `403 { error }`; the UI routes the user back to the Selfie Check flow.
+- **Verification:** unverified requests to protected routes return `403 { error }`; the UI routes the user back to the World ID verification flow.
 - **Subgraph/RPC failure:** route handlers return `{ error }`; the dashboard shows an explicit error state with retry (never a blank screen).
 - **LLM absent/rate-limited:** explanation falls back to a deterministic template; the app never throws on a missing key.
 - **Empty/loading states:** no-agents and no-activity render empty states; async views render skeletons.

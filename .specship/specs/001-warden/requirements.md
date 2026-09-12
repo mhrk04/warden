@@ -17,7 +17,7 @@ This is an ETHOnline 2026 hackathon build targeting the ENS, World, Privy, and T
 - **Policy / scope:** the set of rules bound to an agent — per-tx cap, cumulative cap, recipient allowlist, expiry, revoked flag.
 - **Agent signer:** the Privy embedded-wallet address the agent uses to propose payouts (low authority — cannot bypass the Guard).
 - **ENS node:** namehash of the agent's ENSv2 subname; the key the Guard policy is associated with.
-- **Verified human:** a user who has completed World Selfie Check; only they may create an agent or set/raise a policy.
+- **Verified human:** a user who has completed World ID verification (shipped as World ID 4.0 Proof of Human; originally specified against v2 Selfie Check); only they may create an agent or set/raise a policy.
 - **Reject reason class:** enum identifying why a proposal failed — limit_pertx | limit_cumulative | recipient | expired | revoked | not_agent_signer.
 - **Audit plane:** the deployed subgraph (The Graph) indexing Guard events, queried live by the app.
 
@@ -57,7 +57,9 @@ This is an ETHOnline 2026 hackathon build targeting the ENS, World, Privy, and T
 #### Acceptance Criteria
 1. WHEN the human revokes the agent THEN the Guard SHALL emit `Revoked` and reject every subsequent proposal regardless of amount/recipient/time, effective from the revocation transaction onward, with reason `revoked`.
 
-### Requirement 5: Human root of trust (World Selfie Check)
+### Requirement 5: Human root of trust (World ID verification)
+
+> Note: originally specified against World v2 "Selfie Check"; shipped on World ID 4.0 "Proof of Human" (IDKit 4.x, `POST /api/v4/verify/{rp_id}`). The intent below — a server-enforced verified-human gate — is unchanged; the acceptance criteria wording predates the v4 migration.
 
 **User Story:** As the system owner, I want only verified humans to create or authorize agents, so that a bot cannot self-authorize spending power.
 
